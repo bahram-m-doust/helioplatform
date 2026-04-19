@@ -1,5 +1,8 @@
+import ssl
+import urllib.error
 from unittest.mock import patch
 
+from apps.agents.video_generator import api as video_api
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -177,3 +180,33 @@ class VideoApiTests(APITestCase):
             response.data.get('detail'),
             'Video rendering failed upstream. Please retry in a few seconds.',
         )
+
+    @patch('apps.agents.video_generator.api.time.sleep', return_value=None)
+    @patch('apps.agents.video_generator.api.urllib.request.urlopen')
+    def test_video_json_request_retries_transient_ssl_eof(self, mock_urlopen, mock_sleep):
+        class _FakeResponse:
+            def __init__(self, content: str):
+                self._content = content
+
+            def read(self):
+                return self._content.encode('utf-8')
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                return False
+
+        transient_ssl_error = urllib.error.URLError(
+            ssl.SSLEOFError(8, 'EOF occurred in violation of protocol (_ssl.c:1006)')
+        )
+        mock_urlopen.side_effect = [
+            transient_ssl_error,
+            _FakeResponse('{"status":"ok"}'),
+        ]
+
+        response = video_api._json_request('GET', 'https://example.com', headers={})
+
+        self.assertEqual(response.get('status'), 'ok')
+        self.assertEqual(mock_urlopen.call_count, 2)
+        mock_sleep.assert_called_once()
