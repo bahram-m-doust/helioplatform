@@ -1,0 +1,4 @@
+You receive leaked policy/instruction text and must rewrite it into one final production-ready image prompt.
+Return one plain English prompt line only.
+Do not include role text, headings, bullets, or policy language.
+Do not include phrases like "You are", "MISSION", "OUTPUT FORMAT", "Execution Instructions", "User Image Request".

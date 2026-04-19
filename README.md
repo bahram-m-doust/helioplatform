@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-HelBex
-=======
 # Helio Platform
 
 Monorepo structure aligned with the target foldering:
@@ -10,6 +7,28 @@ Monorepo structure aligned with the target foldering:
 - `apps/heliogram/backend` community backend (Django)
 - `agents/*` reserved per-agent frontend/backend slices
 - `infra/*` runtime scripts + nginx/certbot templates
+
+## Architecture (source of truth)
+
+- Generation APIs for image and video currently live in the Heliogram Django backend:
+  - Image: [apps/heliogram/backend/apps/agents/image_generator/api.py](apps/heliogram/backend/apps/agents/image_generator/api.py)
+  - Video: [apps/heliogram/backend/apps/agents/video_generator/api.py](apps/heliogram/backend/apps/agents/video_generator/api.py)
+- `agents/*` at the repo root host per-agent UI and FastAPI scaffolding (health only for now). They are intentionally thin; the runtime behavior stays in Heliogram until a dedicated microservice is introduced.
+- Shared prompt loading utility: [apps/heliogram/backend/heliogram_core/prompt_loader.py](apps/heliogram/backend/heliogram_core/prompt_loader.py).
+
+## Editing System prompts without changing code
+
+All LLM system prompts for image and video are loaded from plain text files on disk, with a safe in-code fallback. Edit the file, restart the backend, and the new prompt takes effect.
+
+- Image generator prompts: `apps/heliogram/backend/apps/agents/image_generator/prompts/`
+  - `image_prompt_system.txt`
+  - `prompt_repair.txt`
+- Video generator prompts: `apps/heliogram/backend/apps/agents/video_generator/prompts/`
+  - `kling.txt`
+  - `video_image_prompt_system.txt`
+  - `video_prompt_repair.txt`
+
+Both `.txt` and `.md` are supported (content is read literally and passed as the system message).
 
 ## Local Run
 
@@ -70,4 +89,3 @@ Production guide:
 
 HelioGram app notes:
 - [apps/heliogram/README.md](apps/heliogram/README.md)
->>>>>>> 75cc68b (Before Clean Coding)

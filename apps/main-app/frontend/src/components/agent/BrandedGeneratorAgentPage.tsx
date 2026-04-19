@@ -10,7 +10,7 @@ import {
   OPENROUTER_MODEL,
 } from '../../config/site';
 
-type BrandKey = 'Mansory' | 'Technogym' | 'Binghatti';
+type OptionKey = string;
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -21,15 +21,14 @@ export interface AgentDefinition {
   title: string;
   subtitle: string;
   introMessage: string;
-  brandPrompts: Record<BrandKey, string>;
+  brandPrompts: Record<OptionKey, string>;
+  optionLabel?: string;
 }
 
 interface BrandedGeneratorAgentPageProps {
   definition: AgentDefinition;
   allowDownload?: boolean;
 }
-
-const BRAND_OPTIONS: BrandKey[] = ['Mansory', 'Technogym', 'Binghatti'];
 
 const parseProviderError = (status: number, errorText: string): string => {
   let providerMessage = `API request failed with status ${status}.`;
@@ -83,7 +82,8 @@ export function BrandedGeneratorAgentPage({
   allowDownload = true,
 }: BrandedGeneratorAgentPageProps) {
   const { isAuthenticated, openAuthModal } = useAuth();
-  const [selectedBrand, setSelectedBrand] = useState<BrandKey>('Mansory');
+  const brandOptions = Object.keys(definition.brandPrompts);
+  const [selectedBrand, setSelectedBrand] = useState<OptionKey>(brandOptions[0] ?? '');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -211,7 +211,7 @@ export function BrandedGeneratorAgentPage({
       <head><meta charset='utf-8'><title>${definition.title} Chat History</title></head>
       <body>
         <h1>${definition.title} Chat History</h1>
-        <p><strong>Selected Brand Profile:</strong> ${selectedBrand}</p>
+        <p><strong>${definition.optionLabel ?? 'Selected Brand Profile'}:</strong> ${selectedBrand}</p>
     `;
 
     messages.forEach((msg) => {
@@ -285,10 +285,10 @@ export function BrandedGeneratorAgentPage({
               <>
                 <div className="px-6 pt-5 pb-4 border-b border-neutral-100">
                   <p className="text-xs font-semibold tracking-wide text-neutral-500 uppercase mb-3">
-                    Select Brand
+                    {definition.optionLabel ?? 'Select Brand'}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {BRAND_OPTIONS.map((brand) => {
+                    {brandOptions.map((brand) => {
                       const isActive = selectedBrand === brand;
                       return (
                         <button

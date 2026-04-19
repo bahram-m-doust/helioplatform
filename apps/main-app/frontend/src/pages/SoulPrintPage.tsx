@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Download, Bot, User, Shield, Paperclip, X } from 'lucide-react';
+import { Send, Download, Bot, User, Shield, Paperclip, X, Trash2 } from 'lucide-react';
 import { SiteHeader } from '../components/layout/SiteHeader';
 import { SiteFooter } from '../components/layout/SiteFooter';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,13 @@ import {
   OPENROUTER_FALLBACK_MODELS,
   OPENROUTER_CHAT_URL,
 } from '../config/site';
+import {
+  clearChatHistory,
+  loadChatHistory,
+  saveChatHistory,
+} from '../services/chatHistoryStore';
+
+const SOUL_PRINT_AGENT_ID = 'soul-print';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -449,6 +456,22 @@ const MAX_UPLOAD_COUNT = 5;
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_UPLOAD_BYTES = 20 * 1024 * 1024;
 
+const WORD_MIME_TYPES = new Set<string>([
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]);
+const WORD_EXTENSIONS = ['.doc', '.docx'];
+const WORD_ACCEPT_ATTRIBUTE =
+  '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+const isWordFile = (file: File): boolean => {
+  const name = file.name.toLowerCase();
+  if (WORD_EXTENSIONS.some((ext) => name.endsWith(ext))) {
+    return true;
+  }
+  return WORD_MIME_TYPES.has(file.type);
+};
+
 const parseProviderError = (status: number, errorText: string): string => {
   let providerMessage = `API request failed with status ${status}.`;
 
@@ -522,9 +545,10 @@ const extractAssistantContent = (content: unknown): string => {
 };
 
 export default function SoulPrintApp() {
-  const { isAuthenticated, openAuthModal } = useAuth();
+  const { isAuthenticated, openAuthModal, username } = useAuth();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -547,17 +571,31 @@ export default function SoulPrintApp() {
 
   useEffect(() => {
     if (!isAuthenticated) {
+      setHistoryLoaded(false);
+      setMessages([]);
       return;
     }
 
-    setMessages((prev) => {
-      if (prev.length > 0) {
-        return prev;
-      }
+    const stored = loadChatHistory(SOUL_PRINT_AGENT_ID, username);
+    if (stored.length > 0) {
+      setMessages(stored);
+    } else {
+      setMessages([{ role: 'assistant', content: WELCOME_MESSAGE }]);
+    }
+    setHistoryLoaded(true);
+  }, [isAuthenticated, username]);
 
-      return [{ role: 'assistant', content: WELCOME_MESSAGE }];
-    });
-  }, [isAuthenticated]);
+  useEffect(() => {
+    if (!isAuthenticated || !historyLoaded) {
+      return;
+    }
+    saveChatHistory(SOUL_PRINT_AGENT_ID, username, messages);
+  }, [isAuthenticated, historyLoaded, messages, username]);
+
+  const handleClearHistory = () => {
+    clearChatHistory(SOUL_PRINT_AGENT_ID, username);
+    setMessages([{ role: 'assistant', content: WELCOME_MESSAGE }]);
+  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles: File[] = Array.from(event.target.files ?? []);
@@ -590,6 +628,13 @@ export default function SoulPrintApp() {
     const rejectedReasons: string[] = [];
 
     for (const file of filesToProcess) {
+      if (!isWordFile(file)) {
+        rejectedReasons.push(
+          `${file.name}: only Word documents (.doc / .docx) are accepted by the Soul Print agent.`,
+        );
+        continue;
+      }
+
       if (file.size > MAX_FILE_SIZE_BYTES) {
         rejectedReasons.push(
           `${file.name}: file is too large (${formatFileSize(file.size)}). Max per file is ${formatFileSize(MAX_FILE_SIZE_BYTES)}.`,
@@ -820,16 +865,30 @@ export default function SoulPrintApp() {
                 <p className="text-sm text-neutral-500 mt-1">
                   Founder interview and Soulprint analysis workflow for building your brand city logic.
                 </p>
+                <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-medium text-neutral-600">
+                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+                  This agent only reads Word (.doc / .docx) files.
+                </p>
               </div>
             </div>
             {isAuthenticated && messages.length > 0 && (
-              <button 
-                onClick={handleDownload}
-                className="flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 bg-white border border-neutral-200 px-4 py-2 rounded-md shadow-sm transition-colors"
-              >
-                <Download className="size-4" />
-                Download Chat
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleClearHistory}
+                  className="flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-red-600 bg-white border border-neutral-200 px-4 py-2 rounded-md shadow-sm transition-colors"
+                  title="Clear saved chat history"
+                >
+                  <Trash2 className="size-4" />
+                  Clear
+                </button>
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 bg-white border border-neutral-200 px-4 py-2 rounded-md shadow-sm transition-colors"
+                >
+                  <Download className="size-4" />
+                  Download Chat
+                </button>
+              </div>
             )}
           </div>
           
@@ -898,6 +957,7 @@ export default function SoulPrintApp() {
                     ref={fileInputRef}
                     type="file"
                     multiple
+                    accept={WORD_ACCEPT_ATTRIBUTE}
                     onChange={handleFileSelect}
                     className="hidden"
                   />
@@ -955,7 +1015,7 @@ export default function SoulPrintApp() {
                     </button>
                   </div>
                   <p className="text-xs text-neutral-400 mt-2 text-center">
-                    Press Enter to send, Shift+Enter for new line. Upload up to {MAX_UPLOAD_COUNT} files per message.
+                    Press Enter to send, Shift+Enter for new line. Attach up to {MAX_UPLOAD_COUNT} Word files (.doc / .docx) per message.
                     {isUploadingFiles ? ' Processing files...' : ''}
                   </p>
                 </div>

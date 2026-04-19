@@ -2,15 +2,17 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { AuthModal } from '../components/AuthModal';
 
 const AUTH_STORAGE_KEY = 'helio.auth.isAuthenticated';
+const USERNAME_STORAGE_KEY = 'helio.auth.username';
 const ACTIVITY_STORAGE_KEY = 'helio.auth.lastActivityAt';
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 const SESSION_CHECK_INTERVAL_MS = 15 * 1000;
 
 interface AuthContextValue {
   isAuthenticated: boolean;
+  username: string | null;
   openAuthModal: () => void;
   closeAuthModal: () => void;
-  login: () => void;
+  login: (username?: string) => void;
   logout: () => void;
 }
 
@@ -40,6 +42,15 @@ const clearStoredSession = (): void => {
 
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
   window.localStorage.removeItem(ACTIVITY_STORAGE_KEY);
+  window.localStorage.removeItem(USERNAME_STORAGE_KEY);
+};
+
+const getStoredUsername = (): string | null => {
+  if (!canUseStorage()) {
+    return null;
+  }
+  const raw = window.localStorage.getItem(USERNAME_STORAGE_KEY);
+  return raw && raw.trim().length > 0 ? raw : null;
 };
 
 const setLastActivity = (): void => {
@@ -70,6 +81,7 @@ const hasValidSession = (): boolean => {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const openAuthModal = useCallback(() => {
@@ -82,16 +94,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     setIsAuthenticated(false);
+    setUsername(null);
     setIsAuthModalOpen(false);
     clearStoredSession();
   }, []);
 
-  const login = useCallback(() => {
+  const login = useCallback((nextUsername?: string) => {
     setIsAuthenticated(true);
     setIsAuthModalOpen(false);
 
+    const resolvedUsername = nextUsername && nextUsername.trim().length > 0 ? nextUsername : null;
+    setUsername(resolvedUsername);
+
     if (canUseStorage()) {
       window.localStorage.setItem(AUTH_STORAGE_KEY, '1');
+      if (resolvedUsername) {
+        window.localStorage.setItem(USERNAME_STORAGE_KEY, resolvedUsername);
+      }
       setLastActivity();
     }
   }, []);
@@ -99,11 +118,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (hasValidSession()) {
       setIsAuthenticated(true);
+      setUsername(getStoredUsername());
       return;
     }
 
     clearStoredSession();
     setIsAuthenticated(false);
+    setUsername(null);
   }, []);
 
   useEffect(() => {
@@ -151,8 +172,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (hasValidSession()) {
         setIsAuthenticated(true);
+        setUsername(getStoredUsername());
       } else {
         setIsAuthenticated(false);
+        setUsername(null);
       }
     };
 
@@ -163,12 +186,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       isAuthenticated,
+      username,
       openAuthModal,
       closeAuthModal,
       login,
       logout,
     }),
-    [closeAuthModal, isAuthenticated, login, logout, openAuthModal],
+    [closeAuthModal, isAuthenticated, login, logout, openAuthModal, username],
   );
 
   return (

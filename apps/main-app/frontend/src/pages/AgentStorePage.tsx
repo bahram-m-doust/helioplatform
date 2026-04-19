@@ -5,7 +5,7 @@ import {
   Video,
   Image as ImageIcon,
   MessageSquare,
-  Briefcase,
+  BookOpen,
   Megaphone,
   PenTool,
   ArrowRight,
@@ -23,11 +23,12 @@ const agents = [
     videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4"
   },
   {
-    icon: Briefcase,
-    title: "Field Sales Ops Management",
-    short: "A comprehensive system for managing field sales operations efficiently.",
-    long: "A comprehensive system designed for managing field sales operations (سیستم مدیریت عملیات فروش میدانی). It optimizes routes, tracks performance, and provides real-time insights to empower your field sales team and maximize revenue.",
-    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4"
+    icon: BookOpen,
+    title: "Storyteller",
+    short: "Craft brand-aligned narratives and storytelling across channels.",
+    long: "A narrative agent that turns your brand's essence into compelling stories. It adapts to a chosen Language Style or Brand Language profile to produce brand-aligned narratives for campaigns, content, and communications.",
+    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+    route: "/storyteller"
   },
   {
     icon: ImageIcon,

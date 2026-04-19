@@ -1,14 +1,4 @@
 node_modules/
-<<<<<<< HEAD
-build/
-dist/
-coverage/
-.DS_Store
-*.log
-.env*
-!.env.example
-heliogram/.runtime/
-=======
 dist/
 build/
 coverage/
@@ -18,6 +8,7 @@ coverage/
 __pycache__/
 
 .env
+.env.*
 apps/heliogram/.env
 apps/heliogram/backend/.env
 apps/heliogram/backend/db.sqlite3
@@ -26,7 +17,12 @@ apps/heliogram/frontend/node_modules/
 apps/heliogram/.runtime/
 apps/heliogram/backend/storage/
 
+agents/**/dist/
+agents/**/build/
+agents/**/node_modules/
+agents/**/.runtime/
+
 !.env.example
 !apps/heliogram/.env.example
+!apps/heliogram/backend/.env.example
 !apps/heliogram/backend/storage/workspaces/.gitkeep
->>>>>>> 75cc68b (Before Clean Coding)

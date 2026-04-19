@@ -29,6 +29,13 @@ export function SiteHeader({ isAuthenticated, onLoginClick }: SiteHeaderProps) {
           </Link>
           <nav className="hidden md:flex items-center gap-8">
             <Link
+              to="/brand-city"
+              onClick={handleNavClick}
+              className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
+            >
+              Dashboard
+            </Link>
+            <Link
               to="/services"
               onClick={handleNavClick}
               className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"

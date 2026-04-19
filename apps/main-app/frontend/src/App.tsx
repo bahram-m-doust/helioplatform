@@ -8,6 +8,10 @@ import CommunityPage from './pages/CommunityPage';
 import ImageGeneratorPage from './pages/ImageGeneratorPage';
 import VideoGeneratorPage from './pages/VideoGeneratorPage';
 import CampaignMakerPage from './pages/CampaignMakerPage';
+import StorytellerPage from './pages/StorytellerPage';
+import BrandCityPage from './pages/BrandCityPage';
+import QuestionnairePage from './pages/QuestionnairePage';
+import QuestionnaireSectionPage from './pages/QuestionnaireSectionPage';
 import { ScrollToTop } from './components/navigation/ScrollToTop';
 import { AuthProvider } from './context/AuthContext';
 
@@ -24,6 +28,10 @@ export default function App() {
           <Route path="/image-generator" element={<ImageGeneratorPage />} />
           <Route path="/video-generator" element={<VideoGeneratorPage />} />
           <Route path="/campaign-maker" element={<CampaignMakerPage />} />
+          <Route path="/storyteller" element={<StorytellerPage />} />
+          <Route path="/brand-city" element={<BrandCityPage />} />
+          <Route path="/questionnaire" element={<QuestionnairePage />} />
+          <Route path="/questionnaire/:sectionSlug" element={<QuestionnaireSectionPage />} />
           <Route path="/community" element={<CommunityPage />} />
         </Routes>
       </Router>

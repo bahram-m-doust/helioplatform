@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: () => void;
+  onLogin: (username?: string) => void;
 }
 
 export function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) {
@@ -18,7 +18,7 @@ export function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) {
     e.preventDefault();
     if (username === 'admin' && password === 'kan00n123456') {
       setError('');
-      onLogin();
+      onLogin(username);
       onClose();
     } else {
       setError('Invalid username or password');

@@ -12,6 +12,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from heliogram_core.prompt_loader import load_prompt_file
+
 logger = logging.getLogger(__name__)
 
 OPENROUTER_CHAT_URL = 'https://openrouter.ai/api/v1/chat/completions'
@@ -23,20 +25,38 @@ REPLICATE_MAX_POLLS = 120
 NETWORK_RETRY_ATTEMPTS = 3
 NETWORK_RETRY_BASE_DELAY_SECONDS = 0.8
 
-KLING_PROMPT_PATH = Path(__file__).resolve().parent / 'prompts' / 'kling.txt'
+PROMPTS_DIR = Path(__file__).resolve().parent / 'prompts'
+KLING_PROMPT_PATH = PROMPTS_DIR / 'kling.txt'
+VIDEO_IMAGE_PROMPT_SYSTEM_PATH = PROMPTS_DIR / 'video_image_prompt_system.txt'
+VIDEO_PROMPT_REPAIR_PATH = PROMPTS_DIR / 'video_prompt_repair.txt'
 
-VIDEO_IMAGE_PROMPT_SYSTEM = """You are a cinematic image prompt engineer.
-Create one high-quality, model-ready image prompt in English.
-Respect the provided brand and user request.
-Output only the final prompt text without markdown, explanations, or JSON.
-The prompt should be suitable for a keyframe image used as the first frame of a branded video.
-"""
+VIDEO_IMAGE_PROMPT_SYSTEM_FALLBACK = (
+    "You are a cinematic image prompt engineer.\n"
+    "Create one high-quality, model-ready image prompt in English.\n"
+    "Respect the provided brand and user request.\n"
+    "Output only the final prompt text without markdown, explanations, or JSON.\n"
+    "The prompt should be suitable for a keyframe image used as the first frame of a branded video.\n"
+)
 
-PROMPT_REPAIR_SYSTEM = """You rewrite noisy instruction dumps into one final production-ready prompt.
-Return only one plain English prompt line.
-Never include headings, bullets, role text, or policy/rule text.
-Never include phrases like "You are", "MISSION", "OUTPUT FORMAT", "Execution Instructions", or "User Image Request".
-"""
+PROMPT_REPAIR_SYSTEM_FALLBACK = (
+    "You rewrite noisy instruction dumps into one final production-ready prompt.\n"
+    "Return only one plain English prompt line.\n"
+    "Never include headings, bullets, role text, or policy/rule text.\n"
+    'Never include phrases like "You are", "MISSION", "OUTPUT FORMAT", "Execution Instructions", or "User Image Request".\n'
+)
+
+KLING_SYSTEM_PROMPT_FALLBACK = (
+    'You are a Vision-to-Kling prompt compiler. Analyze the image and return one concise, '
+    'production-ready English prompt for image-to-video generation while preserving identity and scene coherence.'
+)
+
+
+def _video_image_prompt_system() -> str:
+    return load_prompt_file(VIDEO_IMAGE_PROMPT_SYSTEM_PATH, fallback=VIDEO_IMAGE_PROMPT_SYSTEM_FALLBACK)
+
+
+def _prompt_repair_system() -> str:
+    return load_prompt_file(VIDEO_PROMPT_REPAIR_PATH, fallback=PROMPT_REPAIR_SYSTEM_FALLBACK)
 
 PROMPT_LEAK_MARKERS = (
     'you are a cinematic image prompt engineer',
@@ -264,7 +284,7 @@ def _openrouter_chat(messages: list[dict], *, max_tokens: int = 700, temperature
 
 def _repair_prompt_output(kind: str, brand: str, user_request: str, raw_output: str) -> str:
     messages = [
-        {'role': 'system', 'content': PROMPT_REPAIR_SYSTEM},
+        {'role': 'system', 'content': _prompt_repair_system()},
         {
             'role': 'user',
             'content': (
@@ -296,23 +316,7 @@ def _fallback_video_prompt(brand: str, user_request: str) -> str:
 
 
 def _load_kling_system_prompt() -> str:
-    if KLING_PROMPT_PATH.exists():
-        prompt = KLING_PROMPT_PATH.read_text(encoding='utf-8', errors='ignore').replace('\ufeff', '')
-        replacements = {
-            '\u00e2\u20ac\u2122': "'",
-            '\u00e2\u20ac\u0153': '"',
-            '\u00e2\u20ac\u009d': '"',
-            '\u00e2\u20ac\u201d': '-',
-            '\u00e2\u20ac\u201c': '-',
-            '\u00e2\u20ac\u00a6': '...',
-        }
-        for broken, fixed in replacements.items():
-            prompt = prompt.replace(broken, fixed)
-        return prompt.strip()
-    return (
-        'You are a Vision-to-Kling prompt compiler. Analyze the image and return one concise, '
-        'production-ready English prompt for image-to-video generation while preserving identity and scene coherence.'
-    )
+    return load_prompt_file(KLING_PROMPT_PATH, fallback=KLING_SYSTEM_PROMPT_FALLBACK)
 
 def _poll_replicate_prediction(get_url: str, headers: dict) -> dict:
     poll_count = 0
@@ -339,7 +343,7 @@ class VideoImagePromptView(APIView):
 
         try:
             messages = [
-                {'role': 'system', 'content': VIDEO_IMAGE_PROMPT_SYSTEM},
+                {'role': 'system', 'content': _video_image_prompt_system()},
                 {
                     'role': 'user',
                     'content': (
