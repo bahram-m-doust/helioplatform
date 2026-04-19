@@ -1,9 +1,14 @@
 {
+<<<<<<< HEAD
   "name": "react-example",
+=======
+  "name": "helio-platform",
+>>>>>>> 75cc68b (Before Clean Coding)
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+<<<<<<< HEAD
     "dev": "node scripts/dev-auto.mjs",
     "dev:site": "vite --port=4000 --host=0.0.0.0",
     "build": "vite build",
@@ -13,6 +18,17 @@
     "community:up": "node scripts/community-up.mjs",
     "community:down": "node scripts/community-down.mjs",
     "community:logs": "docker compose -f heliogram/docker-compose.yml logs -f"
+=======
+    "dev": "node infra/scripts/dev-auto.mjs",
+    "dev:site": "vite --config apps/main-app/frontend/vite.config.ts --port=4000 --host=0.0.0.0",
+    "build": "vite build --config apps/main-app/frontend/vite.config.ts",
+    "preview": "vite preview --config apps/main-app/frontend/vite.config.ts --port 4173",
+    "clean": "rm -rf dist",
+    "lint": "tsc --project apps/main-app/frontend/tsconfig.json --noEmit",
+    "community:up": "node infra/scripts/community-up.mjs",
+    "community:down": "node infra/scripts/community-down.mjs",
+    "community:logs": "docker compose -f docker-compose.yml logs -f"
+>>>>>>> 75cc68b (Before Clean Coding)
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

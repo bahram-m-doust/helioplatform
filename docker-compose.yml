@@ -1,0 +1,56 @@
+name: heliogram
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: heliogram-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-heliogram}
+      POSTGRES_USER: ${DB_USER:-heliogram}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-heliogram}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-heliogram} -d ${DB_NAME:-heliogram}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./apps/heliogram
+      dockerfile: backend/Dockerfile
+    container_name: heliogram-backend
+    restart: unless-stopped
+    env_file:
+      - ./apps/heliogram/.env
+    environment:
+      USE_SQLITE: "False"
+      DB_ENGINE: django.db.backends.postgresql
+      DB_HOST: db
+      DB_PORT: 5432
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5050}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./apps/heliogram/backend/storage:/app/server/storage
+      - ./apps/heliogram/backend/media:/app/server/media
+      - ./apps/heliogram/backend/staticfiles:/app/server/staticfiles
+    ports:
+      - "${HELIO_BACKEND_PORT:-8010}:8010"
+
+  frontend:
+    build:
+      context: ./apps/heliogram
+      dockerfile: frontend/Dockerfile
+    container_name: heliogram-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${HELIO_FRONTEND_PORT:-5050}:80"
+
+volumes:
+  postgres_data:
