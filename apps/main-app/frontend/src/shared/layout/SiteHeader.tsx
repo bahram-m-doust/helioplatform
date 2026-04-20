@@ -29,13 +29,6 @@ export function SiteHeader({ isAuthenticated, onLoginClick }: SiteHeaderProps) {
           </Link>
           <nav className="hidden md:flex items-center gap-8">
             <Link
-              to="/brand-city"
-              onClick={handleNavClick}
-              className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
-            >
-              Dashboard
-            </Link>
-            <Link
               to="/services"
               onClick={handleNavClick}
               className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
@@ -43,7 +36,7 @@ export function SiteHeader({ isAuthenticated, onLoginClick }: SiteHeaderProps) {
               Services
             </Link>
             <a href="#" className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors">
-              Case Studies
+              Works
             </a>
             <Link
               to="/agent-store"
@@ -51,6 +44,13 @@ export function SiteHeader({ isAuthenticated, onLoginClick }: SiteHeaderProps) {
               className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
             >
               Agent Store
+            </Link>
+            <Link
+              to="/brand-city"
+              onClick={handleNavClick}
+              className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
+            >
+              Dashboard
             </Link>
             {isInternalCommunity ? (
               <Link
@@ -68,9 +68,6 @@ export function SiteHeader({ isAuthenticated, onLoginClick }: SiteHeaderProps) {
                 Community
               </a>
             )}
-            <a href="#" className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors">
-              About Us
-            </a>
           </nav>
           <div className="flex items-center gap-4">
             {resolvedIsAuthenticated ? (
