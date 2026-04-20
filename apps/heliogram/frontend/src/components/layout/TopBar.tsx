@@ -18,15 +18,22 @@ export function TopBar() {
   const [showCreate, setShowCreate] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [newName, setNewName] = useState('')
+  const [creating, setCreating] = useState(false)
   const canCreateWorkspace = !!user && (user.is_superuser || user.is_staff)
 
   const handleCreate = async () => {
     if (!canCreateWorkspace) return
     if (!newName.trim()) return
-    const ws = await createWorkspace({ name: newName.trim() })
-    setCurrentWorkspace(ws)
-    setShowCreate(false)
-    setNewName('')
+    if (creating) return
+    setCreating(true)
+    try {
+      const ws = await createWorkspace({ name: newName.trim() })
+      setCurrentWorkspace(ws)
+      setShowCreate(false)
+      setNewName('')
+    } finally {
+      setCreating(false)
+    }
   }
 
   return (
@@ -154,12 +161,15 @@ export function TopBar() {
             label={t('workspace.name')}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+            onKeyDown={(e) => e.key === 'Enter' && !creating && handleCreate()}
             autoFocus
+            disabled={creating}
           />
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setShowCreate(false)}>{t('common.cancel')}</Button>
-            <Button variant="primary" onClick={handleCreate}>{t('workspace.create')}</Button>
+            <Button variant="ghost" onClick={() => setShowCreate(false)} disabled={creating}>{t('common.cancel')}</Button>
+            <Button variant="primary" onClick={handleCreate} disabled={creating || !newName.trim()}>
+              {creating ? '…' : t('workspace.create')}
+            </Button>
           </div>
         </div>
       </Modal>

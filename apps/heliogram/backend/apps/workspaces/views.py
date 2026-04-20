@@ -14,7 +14,7 @@ Access model:
 from django.contrib.auth.models import User
 from django.db.models import Case, CharField, Exists, F, OuterRef, Q, Value, When
 from django.db.models.functions import Coalesce, Lower
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -71,6 +71,21 @@ class WorkspaceListCreateView(generics.ListCreateAPIView):
         for workspace in queryset.iterator():
             ensure_workspace_core_roles(workspace)
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        # WorkspaceCreateSerializer only validates {name, description} and on
+        # success its default response body would only contain those fields.
+        # The SPA expects a fully-shaped Workspace (icon_path, owner,
+        # invite_code, member_count, is_owner, created_at, updated_at) so it
+        # can immediately select the new workspace without a round-trip.
+        # Validate with the create serializer, then echo the full read
+        # representation.
+        input_serializer = self.get_serializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        workspace = input_serializer.save()
+        output = WorkspaceSerializer(workspace, context=self.get_serializer_context())
+        headers = self.get_success_headers(output.data)
+        return Response(output.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class WorkspaceDetailView(generics.RetrieveUpdateDestroyAPIView):

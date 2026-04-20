@@ -36,7 +36,7 @@ export function LoginForm({ onSwitchToRegister, onSwitchToForgot }: LoginFormPro
       {/* Logo area */}
       <div className="flex flex-col items-center mb-6">
         <img
-          src="/heliogram-logo.png"
+          src={`${import.meta.env.BASE_URL}heliogram-logo.png`}
           alt="HelioGram"
           className="h-12 w-auto object-contain mb-3"
           loading="eager"

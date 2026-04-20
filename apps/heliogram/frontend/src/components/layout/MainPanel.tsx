@@ -29,7 +29,11 @@ export function MainPanel() {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-44 h-16 mx-auto ind-recess flex items-center justify-center px-3">
-            <img src="/heliogram-logo.png" alt="HelioGram" className="max-h-10 w-auto object-contain" />
+            <img
+              src={`${import.meta.env.BASE_URL}heliogram-logo.png`}
+              alt="HelioGram"
+              className="max-h-10 w-auto object-contain"
+            />
           </div>
           <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>Welcome to HelioGram</h2>
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Create or join a workspace to get started</p>

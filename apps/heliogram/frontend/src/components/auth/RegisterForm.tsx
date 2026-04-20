@@ -38,7 +38,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
     <div className="w-full max-w-sm ind-panel-raised p-6" style={{ borderRadius: '12px' }}>
       <div className="flex flex-col items-center mb-6">
         <img
-          src="/heliogram-logo.png"
+          src={`${import.meta.env.BASE_URL}heliogram-logo.png`}
           alt="HelioGram"
           className="h-12 w-auto object-contain mb-3"
           loading="eager"
