@@ -1,30 +1,83 @@
+# =========================================================================
+# helio-platform — root .gitignore
+# Tightened to make secret leakage very hard and to keep venvs/builds out.
+# =========================================================================
+
+# ---- OS / editor noise --------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# ---- Logs & temporary files --------------------------------------------
+*.log
+logs/
+*.pid
+
+# ---- Python ------------------------------------------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Virtual envs (any location) ---------------------------------------
+.venv/
+venv/
+env/
+agents/.venv/
+agents/**/venv/
+apps/heliogram/backend/venv/
+
+# ---- Node / Vite builds -------------------------------------------------
 node_modules/
 dist/
 build/
 coverage/
-.DS_Store
-*.log
-*.pyc
-__pycache__/
-
-.env
-.env.*
-apps/heliogram/.env
-apps/heliogram/backend/.env
-apps/heliogram/backend/db.sqlite3
-apps/heliogram/backend/venv/
-apps/heliogram/frontend/node_modules/
-apps/heliogram/.runtime/
-apps/heliogram/backend/storage/
-
+*.tsbuildinfo
+.cache/
 agents/**/dist/
 agents/**/build/
 agents/**/node_modules/
+
+# =========================================================================
+# Secrets — environment files
+# -------------------------------------------------------------------------
+# Rule of thumb:
+#   .env*.example  -> always committed (templates, no real values)
+#   .env, .env.*   -> NEVER committed (real values live here)
+#
+# The prod deployment reads /opt/helio-platform/.env.prod on the server;
+# that file is deliberately NOT in the repo. See DEPLOY.md for the
+# bootstrap procedure and SECRETS.local.md (also git-ignored) for the
+# concrete values used on this deployment.
+# =========================================================================
+.env
+.env.*
+# Allow any example template: .env.example, .env.prod.example,
+# .env.dev.example, apps/*/.env.example, ...
+!.env*.example
+!**/.env*.example
+
+# ---- Secret reference files (git-ignored, local to each machine) -------
+SECRETS.local.md
+secrets.local.md
+secrets.local/
+*.secrets.local
+
+# ---- Local heliogram artefacts (SQLite, user uploads, runtime state) ---
+apps/heliogram/backend/db.sqlite3
+apps/heliogram/backend/storage/
+apps/heliogram/backend/media/
+apps/heliogram/backend/staticfiles/
+apps/heliogram/.runtime/
 agents/**/.runtime/
 agents/.runtime/
-agents/.venv/
 
-!.env.example
-!apps/heliogram/.env.example
-!apps/heliogram/backend/.env.example
+# Keep the workspaces directory placeholder if it ever gets re-added.
 !apps/heliogram/backend/storage/workspaces/.gitkeep
