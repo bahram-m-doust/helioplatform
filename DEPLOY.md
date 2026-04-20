@@ -363,29 +363,91 @@ rebuild `main-app-frontend` (`--build --no-cache`).
    These tell the browser to only send the session/CSRF cookies over
    HTTPS — non-negotiable for admin security.
 
-**Path B — Let's Encrypt on the origin.**
-Use this if you don't want CF in the request path (or want real
-end-to-end TLS). Rough outline:
+**Path B — Let's Encrypt on the origin (currently active).**
+Used for `platform.helio.ae`. Real end-to-end TLS, no CF in the
+request path. One-time bootstrap (~30 s of HTTP downtime while the
+cert is issued), then fully-automated webroot renewals with zero
+downtime thereafter.
 
-1. Temporarily stop `edge-nginx` (port 80 needs to be free for the
-   HTTP-01 challenge), or use the webroot plugin pointed at a
-   container volume:
+1. Install certbot on the host (outside Docker):
    ```bash
-   apt install -y certbot
-   certbot certonly --standalone -d platform.helio.ae \
-     --non-interactive --agree-tos --email admin@example.com
+   apt update && apt install -y certbot
+   mkdir -p /var/www/certbot    # webroot for ACME challenges
    ```
-2. Bind-mount `/etc/letsencrypt` into `edge-nginx` and add a
-   `listen 443 ssl http2;` block to `infra/nginx/prod/nginx.conf`,
-   plus a permanent redirect from `:80` → `:443` for everything
-   except `/.well-known/acme-challenge/`.
-3. Publish port 443 in `docker-compose.prod.yml` (`- "443:443"`).
-4. Add a weekly renewal cron: `certbot renew --deploy-hook "docker
-   compose -f /opt/helio-platform/docker-compose.prod.yml --env-file
-   /opt/helio-platform/.env.prod kill -s HUP edge-nginx"`.
-5. Same as Path A: flip `SESSION_COOKIE_SECURE` and
-   `CSRF_COOKIE_SECURE` to `True` in `.env.prod` and restart
-   `heliogram-backend`.
+
+2. Stop only the edge container so certbot can bind :80 standalone:
+   ```bash
+   cd /opt/helio-platform
+   docker compose -f docker-compose.prod.yml --env-file .env.prod stop edge-nginx
+   ```
+
+3. Issue the cert (standalone):
+   ```bash
+   certbot certonly --standalone \
+     -d platform.helio.ae \
+     --non-interactive --agree-tos \
+     -m admin@helio.ae
+   ls /etc/letsencrypt/live/platform.helio.ae/    # fullchain.pem + privkey.pem
+   ```
+
+4. Pull the TLS-aware nginx/compose config and rebuild the edge:
+   ```bash
+   git pull --ff-only origin main
+   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build edge-nginx
+   ```
+   The compose file now publishes `:443` and bind-mounts
+   `/etc/letsencrypt` and `/var/www/certbot` read-only.
+
+5. Switch the renewal authenticator from standalone → webroot so
+   future renewals don't need to stop nginx (edit
+   `/etc/letsencrypt/renewal/platform.helio.ae.conf`):
+   ```ini
+   [renewalparams]
+   authenticator = webroot
+   webroot_path = /var/www/certbot
+   # (remove any `pre_hook = ... / post_hook = ...` lines — not needed)
+   ```
+   Install a deploy-hook that reloads nginx after each renewal:
+   ```bash
+   cat >/etc/letsencrypt/renewal-hooks/deploy/reload-edge-nginx.sh <<'EOF'
+   #!/bin/sh
+   docker compose -f /opt/helio-platform/docker-compose.prod.yml \
+     --env-file /opt/helio-platform/.env.prod \
+     kill -s HUP edge-nginx
+   EOF
+   chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-edge-nginx.sh
+   ```
+   Verify:
+   ```bash
+   certbot renew --dry-run
+   systemctl status certbot.timer   # Debian/Ubuntu ships this by default
+   ```
+
+6. Flip the cookie flags and URLs in `.env.prod` to reflect HTTPS:
+   ```
+   PUBLIC_URL=https://platform.helio.ae
+   FRONTEND_URL=https://platform.helio.ae/heliogram
+   SESSION_COOKIE_SECURE=True
+   CSRF_COOKIE_SECURE=True
+   ```
+   Restart the backend so it picks up the new env:
+   ```bash
+   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d heliogram-backend
+   ```
+
+7. Smoke-test:
+   ```bash
+   curl -sI https://platform.helio.ae/                 | head -1   # 200
+   curl -sI https://platform.helio.ae/heliogram/       | head -1   # 200
+   curl -sI https://platform.helio.ae/admin/login/     | head -1   # 200
+   curl -sI https://platform.helio.ae/api/image/health | head -1   # 200
+   curl -sI http://platform.helio.ae/                  | head -1   # 301
+   ```
+
+The bare IP (`http://103.174.102.124/*`) keeps serving plain HTTP
+as the nginx `default_server` — useful for emergency DNS-less
+access. The 301 only applies when the Host header matches the
+domain.
 
 ---
 

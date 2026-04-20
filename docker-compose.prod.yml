@@ -231,6 +231,15 @@ services:
       - campaign-maker-api
     ports:
       - "${PUBLIC_HTTP_PORT:-80}:80"
+      - "${PUBLIC_HTTPS_PORT:-443}:443"
+    # Let's Encrypt artefacts live on the host (certbot runs there) and are
+    # mounted read-only into the container. Missing on a fresh bootstrap?
+    # Run the commands in DEPLOY.md §6b.3 Path B BEFORE the first `up`:
+    # certbot will create the /etc/letsencrypt tree, and `mkdir -p
+    # /var/www/certbot` covers the webroot.
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
 
 volumes:
   prod_postgres_data:
