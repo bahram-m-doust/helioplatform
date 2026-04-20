@@ -47,11 +47,20 @@ else
 fi
 
 echo "[entrypoint.prod] Starting gunicorn on 0.0.0.0:8010..."
-# Single worker keeps the in-memory SSE bus consistent. Change only after
-# introducing an external pub/sub (Redis/NATS).
+# Multiple sync workers + disabled timeout:
+#   - SSE (/api/realtime/events/) keeps a worker busy for the whole stream
+#     lifetime. With workers=1 this froze the entire backend; with workers=3
+#     two workers stay free for normal HTTP while one services the stream.
+#   - --timeout 0 prevents gunicorn from killing long-lived SSE streams after
+#     120s (the previous behaviour returned 500 every two minutes).
+#   - Trade-off: in-memory pub/sub no longer fan-outs across workers. Realtime
+#     events between users on different workers will not arrive instantly;
+#     they'll surface on the next API refresh / focus. Move to Redis pub/sub
+#     when this becomes a real problem.
 exec gunicorn heliogram_core.wsgi:application \
   --bind 0.0.0.0:8010 \
-  --workers 1 \
-  --timeout 120 \
+  --workers 3 \
+  --timeout 0 \
+  --graceful-timeout 30 \
   --access-logfile - \
   --error-logfile -

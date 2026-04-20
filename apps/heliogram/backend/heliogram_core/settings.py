@@ -79,6 +79,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise serves /static/ files (Django admin CSS/JS, DRF browsable API,
+    # collected app statics) directly from the gunicorn process when DEBUG=False.
+    # Must sit immediately after SecurityMiddleware per WhiteNoise docs.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -148,6 +152,11 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# WhiteNoise serves /static/ assets from STATIC_ROOT directly out of the
+# gunicorn process (see WhiteNoiseMiddleware in MIDDLEWARE above). We keep
+# the default storage backend to avoid manifest issues if any third-party
+# CSS references an asset that wasn't collected.
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS
@@ -180,6 +189,38 @@ _frontend_origin = _origin_from_url(FRONTEND_URL)
 if _frontend_origin and _frontend_origin not in CORS_ALLOWED_ORIGINS:
     CORS_ALLOWED_ORIGINS.append(_frontend_origin)
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF: Django 4+ requires CSRF_TRUSTED_ORIGINS for POST forms (e.g. the
+# Django admin) when the request scheme/host doesn't trivially match the
+# server. We derive a safe default from the configured CORS origins and
+# every ALLOWED_HOSTS entry over both http and https; an explicit env var
+# overrides everything.
+def _build_default_csrf_trusted_origins() -> list[str]:
+    origins: list[str] = []
+    seen: set[str] = set()
+    for origin in CORS_ALLOWED_ORIGINS:
+        if origin and origin not in seen:
+            origins.append(origin)
+            seen.add(origin)
+    for host in ALLOWED_HOSTS:
+        if not host or host == '*':
+            continue
+        for scheme in ('http', 'https'):
+            origin = f'{scheme}://{host}'
+            if origin not in seen:
+                origins.append(origin)
+                seen.add(origin)
+    return origins
+
+
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default=','.join(_build_default_csrf_trusted_origins()),
+    cast=Csv(),
+)
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in CSRF_TRUSTED_ORIGINS if o and o.strip()
+]
 
 
 def _discover_private_ipv4_addresses() -> list[str]:
