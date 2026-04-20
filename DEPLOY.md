@@ -290,6 +290,105 @@ need to log in again. That's expected; the downside is only inconvenience.
 
 ---
 
+## 6b. Custom domain & TLS
+
+The production stack treats the bare IP and a custom domain as
+interchangeable — every host is listed in `ALLOWED_HOSTS`,
+`CORS_ALLOWED_ORIGINS`, and `CSRF_TRUSTED_ORIGINS`, and the main-app
+bundle is built with **relative** API URLs, so it adapts to whatever
+host served it.
+
+### 6b.1 Point a domain at the server
+
+1. Create an `A` record on your DNS provider (Cloudflare, Route53, …):
+   ```
+   platform.helio.ae   A   103.174.102.124   Proxy: DNS-only (or "grey cloud")
+   ```
+   Start with DNS-only. Enabling a CDN / orange-cloud proxy is the
+   easiest way to get TLS (see §6b.3 below), but do it *after*
+   verifying HTTP works end-to-end.
+
+2. Verify propagation: `dig +short platform.helio.ae` should return
+   `103.174.102.124` from any machine.
+
+3. Add the new hostname everywhere in `.env.prod`:
+   ```bash
+   ALLOWED_HOSTS=103.174.102.124,platform.helio.ae,localhost
+   CORS_ALLOWED_ORIGINS=http://103.174.102.124,http://platform.helio.ae,https://platform.helio.ae
+   CSRF_TRUSTED_ORIGINS=http://103.174.102.124,http://platform.helio.ae,https://platform.helio.ae
+   FRONTEND_URL=http://platform.helio.ae/heliogram
+   ```
+   The `https://` variants are harmless while still on HTTP — they only
+   start matching once you flip to TLS.
+
+4. Recreate the backend (env-only change, no rebuild):
+   ```bash
+   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d heliogram-backend
+   ```
+
+5. Smoke-test:
+   ```bash
+   curl -sI http://platform.helio.ae/                 | head -1   # 200
+   curl -sI http://platform.helio.ae/heliogram/       | head -1   # 200
+   curl -sI http://platform.helio.ae/admin/login/     | head -1   # 200
+   curl -sI http://platform.helio.ae/api/image/health | head -1   # 200
+   ```
+
+### 6b.2 Same-origin VITE_* — why and when to override
+
+`docker-compose.prod.yml` builds `main-app-frontend` with relative
+paths (`VITE_IMAGE_AGENT_API_BASE_URL=/api/image`, and friends). That
+way the static bundle doesn't care whether the browser reached it via
+the IP, the domain, or https. The trade-off: if you later host an
+agent on a separate origin (e.g. a dedicated GPU box), override the
+relevant `VITE_*_BASE_URL` in `.env.prod` with the absolute URL and
+rebuild `main-app-frontend` (`--build --no-cache`).
+
+### 6b.3 Add TLS (pick one path)
+
+**Path A — Cloudflare proxy (fastest, no server changes).**
+1. In the Cloudflare dashboard, click the grey cloud next to the
+   `platform.helio.ae` record until it turns **orange**.
+2. SSL/TLS → set encryption mode to **Flexible** (browser ↔ CF is
+   HTTPS, CF ↔ origin stays HTTP). Upgrade to *Full* later if you add
+   a cert on the origin.
+3. Wait ~30s, then visit `https://platform.helio.ae/`. The browser
+   sees a valid certificate; the origin keeps serving plain HTTP.
+4. Once HTTPS works, flip the cookie flags **in `.env.prod`** and
+   restart `heliogram-backend`:
+   ```
+   SESSION_COOKIE_SECURE=True
+   CSRF_COOKIE_SECURE=True
+   ```
+   These tell the browser to only send the session/CSRF cookies over
+   HTTPS — non-negotiable for admin security.
+
+**Path B — Let's Encrypt on the origin.**
+Use this if you don't want CF in the request path (or want real
+end-to-end TLS). Rough outline:
+
+1. Temporarily stop `edge-nginx` (port 80 needs to be free for the
+   HTTP-01 challenge), or use the webroot plugin pointed at a
+   container volume:
+   ```bash
+   apt install -y certbot
+   certbot certonly --standalone -d platform.helio.ae \
+     --non-interactive --agree-tos --email admin@example.com
+   ```
+2. Bind-mount `/etc/letsencrypt` into `edge-nginx` and add a
+   `listen 443 ssl http2;` block to `infra/nginx/prod/nginx.conf`,
+   plus a permanent redirect from `:80` → `:443` for everything
+   except `/.well-known/acme-challenge/`.
+3. Publish port 443 in `docker-compose.prod.yml` (`- "443:443"`).
+4. Add a weekly renewal cron: `certbot renew --deploy-hook "docker
+   compose -f /opt/helio-platform/docker-compose.prod.yml --env-file
+   /opt/helio-platform/.env.prod kill -s HUP edge-nginx"`.
+5. Same as Path A: flip `SESSION_COOKIE_SECURE` and
+   `CSRF_COOKIE_SECURE` to `True` in `.env.prod` and restart
+   `heliogram-backend`.
+
+---
+
 ## 7. Smoke checks
 
 ```bash
@@ -326,6 +425,8 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail=100 h
 | `/admin/login/` page is unstyled (3 black boxes, no CSS), `/static/admin/...` returns 404. | Django with `DEBUG=False` doesn't serve `/static/` itself. WhiteNoise must be installed and listed in `MIDDLEWARE` right after `SecurityMiddleware`. | Already in code (`requirements.txt` + `heliogram_core/settings.py`). Pull latest `main` and rebuild `heliogram-backend` (`up -d --build heliogram-backend`). |
 | Django admin login returns `403 Forbidden — CSRF verification failed`.       | `CSRF_COOKIE_SECURE=True` / `SESSION_COOKIE_SECURE=True` over plain HTTP, or `CSRF_TRUSTED_ORIGINS` doesn't include the public origin. | In `.env.prod` set `SESSION_COOKIE_SECURE=False`, `CSRF_COOKIE_SECURE=False`, `CSRF_TRUSTED_ORIGINS=http://<public-ip>`. Restart `heliogram-backend`. Flip the cookie flags back to `True` the moment you put HTTPS in front. |
 | `/api/realtime/events/` returns 500 every ~2 minutes; UI freezes when one tab is open. | Old gunicorn config used a single sync worker with a 120s timeout, so the SSE stream both starved other requests and got killed periodically. | Already in code (`entrypoint.prod.sh` now runs `--workers 3 --timeout 0`). Rebuild `heliogram-backend`. |
+| Browser shows `DisallowedHost` or a Django 400 after adding a new domain. | Hostname not in `ALLOWED_HOSTS`. | Append the new host to `ALLOWED_HOSTS` (and matching `CORS_ALLOWED_ORIGINS` / `CSRF_TRUSTED_ORIGINS`) in `.env.prod`, then `up -d heliogram-backend`. See §6b. |
+| Admin/login works over HTTP but breaks after enabling Cloudflare orange-cloud HTTPS. | `SESSION_COOKIE_SECURE=False` + HTTPS means cookies are now marked insecure and the browser refuses them on the HTTPS page — or the `https://` origin isn't in `CSRF_TRUSTED_ORIGINS`. | Flip both cookie flags to `True`, make sure `https://<domain>` appears in `CSRF_TRUSTED_ORIGINS` and `CORS_ALLOWED_ORIGINS`, restart backend. |
 
 ---
 

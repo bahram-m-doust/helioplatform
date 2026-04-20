@@ -65,20 +65,25 @@ services:
       DJANGO_SETTINGS_MODULE: heliogram_core.settings
       DEBUG: "False"
       SECRET_KEY: ${SECRET_KEY}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-103.174.102.124,localhost}
+      # Defaults cover both the bare IP and the primary public domain so the
+      # stack keeps working during DNS propagation. Override in .env.prod to
+      # add / remove hosts without rebuilding.
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-103.174.102.124,platform.helio.ae,localhost}
       ALLOW_LAN_DEV_ORIGINS: "False"
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://103.174.102.124}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://103.174.102.124,http://platform.helio.ae,https://platform.helio.ae}
       # CSRF_TRUSTED_ORIGINS must include every full origin (scheme + host[:port])
       # that will POST to /admin/login/ or any other Django form endpoint. If
       # empty, settings.py falls back to an auto-derived list from CORS +
       # ALLOWED_HOSTS, which is usually enough for single-host HTTP deployments.
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://103.174.102.124,http://platform.helio.ae,https://platform.helio.ae}
       # Keep both of these False while the public URL is plain HTTP — otherwise
       # the browser refuses to store the session/CSRF cookies and admin login
       # fails with 403. Flip them to True the moment HTTPS is added in front.
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-False}
       CSRF_COOKIE_SECURE: ${CSRF_COOKIE_SECURE:-False}
-      FRONTEND_URL: ${FRONTEND_URL:-http://103.174.102.124/heliogram}
+      # Canonical frontend URL used to build absolute links (password-reset
+      # emails, etc.). Point it at whatever users type in the address bar.
+      FRONTEND_URL: ${FRONTEND_URL:-http://platform.helio.ae/heliogram}
       APP_NAME: ${APP_NAME:-HelioGram}
       DEFAULT_LOCALE: ${DEFAULT_LOCALE:-en}
       # --- Database ---
@@ -132,13 +137,22 @@ services:
     build:
       context: .
       dockerfile: apps/main-app/frontend/Dockerfile.prod
+      # IMPORTANT: Keep these VITE_* defaults as **relative / same-origin**
+      # paths. A production user might reach the app via several URLs:
+      #   * http://103.174.102.124       (bare IP, during DNS propagation)
+      #   * http://platform.helio.ae     (canonical domain)
+      #   * https://platform.helio.ae    (once TLS is in front)
+      # Baking an absolute URL into the bundle forces cross-origin calls for
+      # two of the three cases. A relative base makes the browser call the
+      # same host that served the bundle — nginx already routes
+      # /api/{image,video,storyteller,campaign,*} to the right upstream.
       args:
-        VITE_HELIOGRAM_API_BASE_URL: ${VITE_HELIOGRAM_API_BASE_URL:-http://103.174.102.124}
-        VITE_IMAGE_AGENT_API_BASE_URL: ${VITE_IMAGE_AGENT_API_BASE_URL:-http://103.174.102.124/api/image}
-        VITE_VIDEO_AGENT_API_BASE_URL: ${VITE_VIDEO_AGENT_API_BASE_URL:-http://103.174.102.124/api/video}
-        VITE_STORYTELLER_AGENT_API_BASE_URL: ${VITE_STORYTELLER_AGENT_API_BASE_URL:-http://103.174.102.124/api/storyteller}
-        VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL: ${VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL:-http://103.174.102.124/api/campaign}
-        VITE_COMMUNITY_URL: ${VITE_COMMUNITY_URL:-http://103.174.102.124/heliogram}
+        VITE_HELIOGRAM_API_BASE_URL: ${VITE_HELIOGRAM_API_BASE_URL:-/}
+        VITE_IMAGE_AGENT_API_BASE_URL: ${VITE_IMAGE_AGENT_API_BASE_URL:-/api/image}
+        VITE_VIDEO_AGENT_API_BASE_URL: ${VITE_VIDEO_AGENT_API_BASE_URL:-/api/video}
+        VITE_STORYTELLER_AGENT_API_BASE_URL: ${VITE_STORYTELLER_AGENT_API_BASE_URL:-/api/storyteller}
+        VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL: ${VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL:-/api/campaign}
+        VITE_COMMUNITY_URL: ${VITE_COMMUNITY_URL:-/heliogram}
         VITE_OPENROUTER_API_KEY: ${VITE_OPENROUTER_API_KEY:-}
         VITE_OPENROUTER_MODEL: ${VITE_OPENROUTER_MODEL:-openai/gpt-4o}
         VITE_OPENROUTER_FALLBACK_MODELS: ${VITE_OPENROUTER_FALLBACK_MODELS:-}
