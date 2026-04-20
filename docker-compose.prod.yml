@@ -68,6 +68,16 @@ services:
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-103.174.102.124,localhost}
       ALLOW_LAN_DEV_ORIGINS: "False"
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://103.174.102.124}
+      # CSRF_TRUSTED_ORIGINS must include every full origin (scheme + host[:port])
+      # that will POST to /admin/login/ or any other Django form endpoint. If
+      # empty, settings.py falls back to an auto-derived list from CORS +
+      # ALLOWED_HOSTS, which is usually enough for single-host HTTP deployments.
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+      # Keep both of these False while the public URL is plain HTTP — otherwise
+      # the browser refuses to store the session/CSRF cookies and admin login
+      # fails with 403. Flip them to True the moment HTTPS is added in front.
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-False}
+      CSRF_COOKIE_SECURE: ${CSRF_COOKIE_SECURE:-False}
       FRONTEND_URL: ${FRONTEND_URL:-http://103.174.102.124/heliogram}
       APP_NAME: ${APP_NAME:-HelioGram}
       DEFAULT_LOCALE: ${DEFAULT_LOCALE:-en}
