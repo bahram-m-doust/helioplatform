@@ -14,6 +14,7 @@ import os
 import socket
 from pathlib import Path
 from datetime import timedelta
+from urllib.parse import urlparse
 
 from decouple import config, Csv
 from django.core.exceptions import ImproperlyConfigured
@@ -150,16 +151,34 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS
-# Frontend origin for browser API calls.
+# FRONTEND_URL may contain a path (e.g. "http://host/heliogram") because it is
+# also used to build absolute links such as password-reset URLs. CORS origins,
+# however, must be scheme+host[:port] only (django-cors-headers E014), so we
+# normalize before appending.
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5050')
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
     default='http://localhost:5050,http://localhost:4000,http://127.0.0.1:4000',
     cast=Csv(),
 )
+
+
+def _origin_from_url(url: str) -> str:
+    if not url:
+        return ''
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        return ''
+    return f'{parsed.scheme}://{parsed.netloc}'
+
+
+CORS_ALLOWED_ORIGINS = [
+    _origin_from_url(origin) for origin in CORS_ALLOWED_ORIGINS if origin
+]
 CORS_ALLOWED_ORIGINS = [origin for origin in CORS_ALLOWED_ORIGINS if origin]
-if FRONTEND_URL and FRONTEND_URL not in CORS_ALLOWED_ORIGINS:
-    CORS_ALLOWED_ORIGINS.append(FRONTEND_URL)
+_frontend_origin = _origin_from_url(FRONTEND_URL)
+if _frontend_origin and _frontend_origin not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append(_frontend_origin)
 CORS_ALLOW_CREDENTIALS = True
 
 
