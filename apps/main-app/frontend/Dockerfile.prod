@@ -1,0 +1,58 @@
+# syntax=docker/dockerfile:1.6
+# Multi-stage production build for the main-app (marketing site + agent SPA).
+# Build context: repository root (see docker-compose.prod.yml).
+#
+# All VITE_* values are baked into the static bundle at build time. They are
+# declared as ARGs here and re-exported as ENV so Vite's `import.meta.env`
+# picks them up during `vite build`.
+
+# ---------- Stage 1: build the SPA ----------
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+# Install dependencies first (better layer caching).
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Public build-time configuration. All values come from docker-compose args.
+ARG VITE_HELIOGRAM_API_BASE_URL
+ARG VITE_IMAGE_AGENT_API_BASE_URL
+ARG VITE_VIDEO_AGENT_API_BASE_URL
+ARG VITE_STORYTELLER_AGENT_API_BASE_URL
+ARG VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL
+ARG VITE_COMMUNITY_URL
+ARG VITE_OPENROUTER_API_KEY=""
+ARG VITE_OPENROUTER_MODEL="openai/gpt-4o"
+ARG VITE_OPENROUTER_FALLBACK_MODELS=""
+
+ENV VITE_HELIOGRAM_API_BASE_URL=$VITE_HELIOGRAM_API_BASE_URL \
+    VITE_IMAGE_AGENT_API_BASE_URL=$VITE_IMAGE_AGENT_API_BASE_URL \
+    VITE_VIDEO_AGENT_API_BASE_URL=$VITE_VIDEO_AGENT_API_BASE_URL \
+    VITE_STORYTELLER_AGENT_API_BASE_URL=$VITE_STORYTELLER_AGENT_API_BASE_URL \
+    VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL=$VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL \
+    VITE_COMMUNITY_URL=$VITE_COMMUNITY_URL \
+    VITE_OPENROUTER_API_KEY=$VITE_OPENROUTER_API_KEY \
+    VITE_OPENROUTER_MODEL=$VITE_OPENROUTER_MODEL \
+    VITE_OPENROUTER_FALLBACK_MODELS=$VITE_OPENROUTER_FALLBACK_MODELS \
+    NODE_ENV=production
+
+# Copy only what the build needs (keeps image small, avoids invalidating cache).
+COPY apps/main-app ./apps/main-app
+COPY infra ./infra
+COPY tsconfig*.json ./
+
+RUN npm run build
+
+# ---------- Stage 2: serve the built assets via nginx ----------
+FROM nginx:1.27-alpine AS runtime
+
+# Minimal SPA nginx config (fallback to index.html for client-side routing).
+# The edge nginx in front terminates /api, /heliogram, /static, /media; this
+# inner container only needs to serve the SPA static files.
+RUN rm -f /etc/nginx/conf.d/default.conf
+COPY apps/main-app/frontend/nginx.prod.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

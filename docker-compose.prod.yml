@@ -1,0 +1,215 @@
+# Production stack for helio-platform.
+#
+# Public surface:
+#   - edge-nginx  :80 → the only container with a published port.
+#
+# Everything else (main-app SPA, heliogram SPA + Django, agent APIs, Postgres)
+# is reachable only inside the internal docker network. This enforces
+# "all traffic through nginx" at the network layer, not just by convention.
+#
+# Usage:
+#   cp .env.prod.example .env.prod
+#   # fill in SECRET_KEY, DJANGO_SUPERUSER_*, OPENROUTER_API_KEY, REPLICATE_API_TOKEN, ...
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# The dev stack lives in docker-compose.yml and is not affected by this file.
+
+name: helio-platform-prod
+
+x-default-restart: &default-restart
+  restart: unless-stopped
+
+x-agent-env: &agent-env
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  REPLICATE_API_TOKEN: ${REPLICATE_API_TOKEN:-}
+  REPLICATE_IMAGE_MODEL: ${REPLICATE_IMAGE_MODEL:-bytedance/seedream-4.5}
+  REPLICATE_VIDEO_MODEL: ${REPLICATE_VIDEO_MODEL:-kwaivgi/kling-v2.5-turbo-pro}
+  IMAGE_PROMPT_LLM_MODEL: ${IMAGE_PROMPT_LLM_MODEL:-openai/gpt-4o}
+  VIDEO_PROMPT_LLM_MODEL: ${VIDEO_PROMPT_LLM_MODEL:-openai/gpt-4o}
+  STORYTELLER_LLM_MODEL: ${STORYTELLER_LLM_MODEL:-openai/gpt-4o}
+  STORYTELLER_FALLBACK_MODELS: ${STORYTELLER_FALLBACK_MODELS:-}
+  CAMPAIGN_MAKER_LLM_MODEL: ${CAMPAIGN_MAKER_LLM_MODEL:-openai/gpt-4o}
+  CAMPAIGN_MAKER_FALLBACK_MODELS: ${CAMPAIGN_MAKER_FALLBACK_MODELS:-}
+  FRONTEND_URL: ${PUBLIC_URL:-http://103.174.102.124}
+
+services:
+  # ---------------------------------------------------------------- database
+  db:
+    image: postgres:16-alpine
+    container_name: helio-prod-db
+    <<: *default-restart
+    environment:
+      POSTGRES_DB: ${DB_NAME:-heliogram}
+      POSTGRES_USER: ${DB_USER:-heliogram}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-heliogram}
+    volumes:
+      - prod_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-heliogram} -d ${DB_NAME:-heliogram}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # -------------------------------------------------------- heliogram backend
+  heliogram-backend:
+    build:
+      context: ./apps/heliogram
+      dockerfile: backend/Dockerfile.prod
+    container_name: helio-prod-heliogram-backend
+    <<: *default-restart
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # --- Django core ---
+      DJANGO_SETTINGS_MODULE: heliogram_core.settings
+      DEBUG: "False"
+      SECRET_KEY: ${SECRET_KEY}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-103.174.102.124,localhost}
+      ALLOW_LAN_DEV_ORIGINS: "False"
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://103.174.102.124}
+      FRONTEND_URL: ${FRONTEND_URL:-http://103.174.102.124/heliogram}
+      APP_NAME: ${APP_NAME:-HelioGram}
+      DEFAULT_LOCALE: ${DEFAULT_LOCALE:-en}
+      # --- Database ---
+      USE_SQLITE: "False"
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: ${DB_NAME:-heliogram}
+      DB_USER: ${DB_USER:-heliogram}
+      DB_PASSWORD: ${DB_PASSWORD:-heliogram}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_CONN_MAX_AGE: ${DB_CONN_MAX_AGE:-60}
+      # --- JWT ---
+      JWT_ACCESS_TOKEN_LIFETIME: ${JWT_ACCESS_TOKEN_LIFETIME:-30}
+      JWT_REFRESH_TOKEN_LIFETIME: ${JWT_REFRESH_TOKEN_LIFETIME:-10080}
+      # --- Storage / uploads ---
+      STORAGE_ROOT: /app/server/storage
+      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-52428800}
+      # --- Superuser bootstrap (entrypoint.prod.sh consumes these) ---
+      DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL}
+      # --- Email (optional) ---
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+    volumes:
+      - prod_heliogram_storage:/app/server/storage
+      - prod_heliogram_media:/app/server/media
+      - prod_heliogram_static:/app/server/staticfiles
+    expose:
+      - "8010"
+
+  # ------------------------------------------------------- heliogram frontend
+  heliogram-frontend:
+    build:
+      context: ./apps/heliogram
+      dockerfile: frontend/Dockerfile.prod
+      args:
+        HELIOGRAM_BASE_PATH: /heliogram/
+    container_name: helio-prod-heliogram-frontend
+    <<: *default-restart
+    depends_on:
+      - heliogram-backend
+    expose:
+      - "80"
+
+  # ---------------------------------------------------------------- main-app
+  main-app-frontend:
+    build:
+      context: .
+      dockerfile: apps/main-app/frontend/Dockerfile.prod
+      args:
+        VITE_HELIOGRAM_API_BASE_URL: ${VITE_HELIOGRAM_API_BASE_URL:-http://103.174.102.124}
+        VITE_IMAGE_AGENT_API_BASE_URL: ${VITE_IMAGE_AGENT_API_BASE_URL:-http://103.174.102.124/api/image}
+        VITE_VIDEO_AGENT_API_BASE_URL: ${VITE_VIDEO_AGENT_API_BASE_URL:-http://103.174.102.124/api/video}
+        VITE_STORYTELLER_AGENT_API_BASE_URL: ${VITE_STORYTELLER_AGENT_API_BASE_URL:-http://103.174.102.124/api/storyteller}
+        VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL: ${VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL:-http://103.174.102.124/api/campaign}
+        VITE_COMMUNITY_URL: ${VITE_COMMUNITY_URL:-http://103.174.102.124/heliogram}
+        VITE_OPENROUTER_API_KEY: ${VITE_OPENROUTER_API_KEY:-}
+        VITE_OPENROUTER_MODEL: ${VITE_OPENROUTER_MODEL:-openai/gpt-4o}
+        VITE_OPENROUTER_FALLBACK_MODELS: ${VITE_OPENROUTER_FALLBACK_MODELS:-}
+    container_name: helio-prod-main-app
+    <<: *default-restart
+    expose:
+      - "80"
+
+  # ------------------------------------------------------------ agent APIs --
+  image-generator-api:
+    build:
+      context: ./agents/image-generator/backend
+      dockerfile: Dockerfile.prod
+    container_name: helio-prod-image-generator
+    <<: *default-restart
+    environment:
+      <<: *agent-env
+      SERVICE_NAME: image-generator
+      PORT: "8020"
+    expose:
+      - "8020"
+
+  video-generator-api:
+    build:
+      context: ./agents/video-generator/backend
+      dockerfile: Dockerfile.prod
+    container_name: helio-prod-video-generator
+    <<: *default-restart
+    environment:
+      <<: *agent-env
+      SERVICE_NAME: video-generator
+      PORT: "8030"
+    expose:
+      - "8030"
+
+  storyteller-api:
+    build:
+      context: ./agents/storyteller/backend
+      dockerfile: Dockerfile.prod
+    container_name: helio-prod-storyteller
+    <<: *default-restart
+    environment:
+      <<: *agent-env
+      SERVICE_NAME: storyteller
+      PORT: "8040"
+    expose:
+      - "8040"
+
+  campaign-maker-api:
+    build:
+      context: ./agents/campaign-maker/backend
+      dockerfile: Dockerfile.prod
+    container_name: helio-prod-campaign-maker
+    <<: *default-restart
+    environment:
+      <<: *agent-env
+      SERVICE_NAME: campaign-maker
+      PORT: "8050"
+    expose:
+      - "8050"
+
+  # ----------------------------------------------------------- edge nginx --
+  edge-nginx:
+    build:
+      context: ./infra/nginx/prod
+      dockerfile: Dockerfile
+    container_name: helio-prod-nginx
+    <<: *default-restart
+    depends_on:
+      - main-app-frontend
+      - heliogram-frontend
+      - heliogram-backend
+      - image-generator-api
+      - video-generator-api
+      - storyteller-api
+      - campaign-maker-api
+    ports:
+      - "${PUBLIC_HTTP_PORT:-80}:80"
+
+volumes:
+  prod_postgres_data:
+  prod_heliogram_storage:
+  prod_heliogram_media:
+  prod_heliogram_static:

@@ -12,7 +12,8 @@
     "lint": "tsc --project apps/main-app/frontend/tsconfig.json --noEmit",
     "community:up": "node infra/scripts/community-up.mjs",
     "community:down": "node infra/scripts/community-down.mjs",
-    "community:logs": "docker compose -f docker-compose.yml logs -f"
+    "community:logs": "docker compose -f docker-compose.yml logs -f",
+    "agents:up": "node infra/scripts/agents-up.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

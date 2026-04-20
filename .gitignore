@@ -21,6 +21,8 @@ agents/**/dist/
 agents/**/build/
 agents/**/node_modules/
 agents/**/.runtime/
+agents/.runtime/
+agents/.venv/
 
 !.env.example
 !apps/heliogram/.env.example

@@ -16,6 +16,7 @@ from pathlib import Path
 from datetime import timedelta
 
 from decouple import config, Csv
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -38,6 +39,20 @@ DEBUG = parse_bool(config('DEBUG', default='True'), default=True)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS if host and host.strip()]
 ALLOW_LAN_DEV_ORIGINS = parse_bool(config('ALLOW_LAN_DEV_ORIGINS', default='True'), default=True)
+
+# Production safety: refuse to boot with insecure defaults when DEBUG=False.
+# In DEBUG mode we intentionally stay permissive so local development "just works".
+if not DEBUG:
+    if not SECRET_KEY or SECRET_KEY.startswith('django-insecure-'):
+        raise ImproperlyConfigured(
+            'SECRET_KEY must be set to a strong, non-default value when DEBUG=False. '
+            'Set SECRET_KEY in the environment (e.g. via .env or your deploy config).'
+        )
+    if not ALLOWED_HOSTS:
+        raise ImproperlyConfigured(
+            'ALLOWED_HOSTS must be set (non-empty) when DEBUG=False. '
+            'Example: ALLOWED_HOSTS=your-domain.com,your-public-ip'
+        )
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -230,6 +245,31 @@ EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 EMAIL_USE_TLS = True
+
+# ---------------------------------------------------------------------------
+# Security hardening (production only).
+# These settings apply when DEBUG=False so local dev (HTTP on localhost) keeps
+# working as before. Each flag can still be overridden via env if the deploy
+# sits behind a specific proxy / TLS setup.
+# ---------------------------------------------------------------------------
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = parse_bool(
+        config('SESSION_COOKIE_SECURE', default='True'), default=True,
+    )
+    CSRF_COOKIE_SECURE = parse_bool(
+        config('CSRF_COOKIE_SECURE', default='True'), default=True,
+    )
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = 'same-origin'
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=0, cast=int)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = parse_bool(
+        config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default='False'), default=False,
+    )
+    SECURE_HSTS_PRELOAD = parse_bool(
+        config('SECURE_HSTS_PRELOAD', default='False'), default=False,
+    )
 
 
 

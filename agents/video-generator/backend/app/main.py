@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health
+from app.api.routes import health, video
 from app.config import SERVICE_NAME
 
 
@@ -23,6 +23,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     application.include_router(health.router, tags=["health"])
+    application.include_router(video.router)
     return application
 
 

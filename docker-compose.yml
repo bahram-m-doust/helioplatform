@@ -1,4 +1,4 @@
-name: heliogram
+name: helio-platform
 
 services:
   db:
@@ -17,7 +17,7 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
+  heliogram-backend:
     build:
       context: ./apps/heliogram
       dockerfile: backend/Dockerfile
@@ -38,19 +38,88 @@ services:
       - ./apps/heliogram/backend/storage:/app/server/storage
       - ./apps/heliogram/backend/media:/app/server/media
       - ./apps/heliogram/backend/staticfiles:/app/server/staticfiles
+    # SECURITY: backend is NOT exposed publicly. Traffic must come through
+    # the frontend nginx container (heliogram-frontend) which lives on the
+    # same docker network and proxies /api/ to backend:8010.
+    # We still bind to 127.0.0.1 on the host so an edge reverse proxy on
+    # the host machine (e.g. infra/nginx) can reach it via loopback only.
+    # Override HELIO_BACKEND_BIND to an empty value to disable host binding
+    # entirely (pure docker-network mode).
     ports:
-      - "${HELIO_BACKEND_PORT:-8010}:8010"
+      - "${HELIO_BACKEND_BIND:-127.0.0.1}:${HELIO_BACKEND_PORT:-8010}:8010"
+    expose:
+      - "8010"
 
-  frontend:
+  heliogram-frontend:
     build:
       context: ./apps/heliogram
       dockerfile: frontend/Dockerfile
     container_name: heliogram-frontend
     restart: unless-stopped
     depends_on:
-      - backend
+      - heliogram-backend
     ports:
       - "${HELIO_FRONTEND_PORT:-5050}:80"
+
+  image-generator-api:
+    build:
+      context: ./agents/image-generator/backend
+      dockerfile: Dockerfile
+    container_name: helio-image-generator-api
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      SERVICE_NAME: image-generator
+      PORT: "8020"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4000}
+    ports:
+      - "${IMAGE_AGENT_PORT:-8020}:8020"
+
+  video-generator-api:
+    build:
+      context: ./agents/video-generator/backend
+      dockerfile: Dockerfile
+    container_name: helio-video-generator-api
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      SERVICE_NAME: video-generator
+      PORT: "8030"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4000}
+    ports:
+      - "${VIDEO_AGENT_PORT:-8030}:8030"
+
+  storyteller-api:
+    build:
+      context: ./agents/storyteller/backend
+      dockerfile: Dockerfile
+    container_name: helio-storyteller-api
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      SERVICE_NAME: storyteller
+      PORT: "8040"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4000}
+    ports:
+      - "${STORYTELLER_AGENT_PORT:-8040}:8040"
+
+  campaign-maker-api:
+    build:
+      context: ./agents/campaign-maker/backend
+      dockerfile: Dockerfile
+    container_name: helio-campaign-maker-api
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      SERVICE_NAME: campaign-maker
+      PORT: "8050"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4000}
+    ports:
+      - "${CAMPAIGN_MAKER_AGENT_PORT:-8050}:8050"
 
 volumes:
   postgres_data:

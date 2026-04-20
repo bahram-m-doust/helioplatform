@@ -1,0 +1,59 @@
+# Root .dockerignore — applies when the build context is the repository
+# root (currently only apps/main-app/frontend/Dockerfile.prod does this).
+#
+# All other services use per-directory contexts with their own
+# .dockerignore files, which are unaffected by this file.
+
+# --- VCS / editor ---
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+.cursor/
+
+# --- OS / temp ---
+**/.DS_Store
+**/Thumbs.db
+
+# --- Node ---
+**/node_modules
+**/.vite
+**/.cache
+**/dist
+.npm
+npm-debug.log
+yarn-error.log
+
+# --- Python / FastAPI agents (not needed in main-app build) ---
+agents/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/.venv/
+**/venv/
+**/*.egg-info/
+
+# --- HelioGram (separate build context, not needed in main-app) ---
+apps/heliogram/
+apps/main-app/frontend/node_modules
+apps/main-app/frontend/dist
+
+# --- Runtime / logs / local data ---
+.runtime/
+logs/
+*.log
+*.sqlite3
+*.db
+
+# --- Secrets (never leak into images) ---
+.env
+.env.*
+!.env.example
+!.env.prod.example
+
+# --- Docker itself ---
+# Dockerfiles are passed to the daemon via `-f`; they don't need to ride
+# inside the context. Exclude them plus any compose files from being
+# baked into the image unnecessarily.
+docker-compose*.yml

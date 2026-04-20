@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1.6
+# Multi-stage production build for the HelioGram community SPA served under
+# /heliogram/ by the edge nginx. Build context: apps/heliogram (same as the
+# existing Dockerfile) so nothing else in the repo leaks into the image.
+
+# ---------- Stage 1: build the SPA ----------
+FROM node:20-alpine AS build
+
+WORKDIR /app/client
+
+# Install dependencies first for better layer caching.
+COPY frontend/package*.json ./
+RUN npm ci
+
+# Public base path so Vite rewrites asset URLs to /heliogram/...
+ARG HELIOGRAM_BASE_PATH=/heliogram/
+ENV HELIOGRAM_BASE_PATH=$HELIOGRAM_BASE_PATH
+
+COPY frontend ./
+RUN npm run build
+
+# ---------- Stage 2: serve the static bundle ----------
+FROM nginx:1.27-alpine AS runtime
+
+# Minimal SPA config with a /heliogram-scoped history fallback.
+RUN rm -f /etc/nginx/conf.d/default.conf
+COPY frontend/nginx.prod.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/client/dist /usr/share/nginx/html
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
