@@ -1,29 +1,21 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Volume2, VolumeX } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { SiteHeader } from '../../shared/layout/SiteHeader';
 import { SiteFooter } from '../../shared/layout/SiteFooter';
 import { useAuth } from '../auth/AuthContext';
 
-const BRAND_CITY_VIDEO_URL = 'https://www.w3schools.com/html/mov_bbb.mp4';
+const BRAND_CITY_VIDEO_URL =
+  'https://vxjzzhvjuzeeskgzzqmx.supabase.co/storage/v1/object/sign/Helio%20Platform/Motion-1.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9kOWE4ZWYwOS0wZDA4LTRjZTktOGJlNi1mNjNlM2I2NTgyOTgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJIZWxpbyBQbGF0Zm9ybS9Nb3Rpb24tMS5tcDQiLCJpYXQiOjE3NzY3NTM4MzksImV4cCI6MTgwODI4OTgzOX0.TlojwRN6NV_An5wlpTh6Ux5EimLR1twcFB4Z0UmOmXk';
 
 export default function BrandCityPage() {
   const { isAuthenticated, openAuthModal } = useAuth();
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isVideoEnded, setIsVideoEnded] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
 
   const handleVideoEnded = () => {
     setIsVideoEnded(true);
-  };
-
-  const handleToggleMute = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    const next = !video.muted;
-    video.muted = next;
-    setIsMuted(next);
   };
 
   const handleStart = () => {
@@ -79,15 +71,6 @@ export default function BrandCityPage() {
               >
                 Your browser does not support the video tag.
               </video>
-
-              <button
-                type="button"
-                onClick={handleToggleMute}
-                aria-label={isMuted ? 'Unmute video' : 'Mute video'}
-                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center shadow-md hover:scale-105 transition-transform text-neutral-900 ring-1 ring-white/60"
-              >
-                {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-              </button>
 
               <div
                 className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ${
