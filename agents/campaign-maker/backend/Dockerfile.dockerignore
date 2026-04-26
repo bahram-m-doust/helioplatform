@@ -1,0 +1,18 @@
+# BuildKit per-Dockerfile dockerignore (filename: <Dockerfile>.dockerignore).
+# Applied on top of the root .dockerignore for THIS build only.
+#
+# Build context is the repo root. We pull in only what this agent needs:
+#   - packages/agent-common/        (shared library)
+#   - agents/campaign-maker/backend/  (this agent)
+# Everything else gets dropped to keep the upload tight.
+
+apps/
+infra/
+scripts/
+docs/
+services/
+node_modules/
+package-lock.json
+agents/image-generator/
+agents/video-generator/
+agents/storyteller/

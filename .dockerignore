@@ -1,8 +1,13 @@
 # Root .dockerignore — applies when the build context is the repository
-# root (currently only apps/main-app/frontend/Dockerfile.prod does this).
+# root, which is the case for ALL builds in this repo today:
+#   * apps/main-app/frontend/Dockerfile.prod
+#   * agents/<name>/backend/Dockerfile{,.prod}        (need packages/agent-common)
+#   * services/<name>/Dockerfile{,.prod}              (Phase 2+)
 #
-# All other services use per-directory contexts with their own
-# .dockerignore files, which are unaffected by this file.
+# Per-Dockerfile dockerignore files (BuildKit `Dockerfile.dockerignore`
+# convention) live alongside each Dockerfile and trim the context further
+# for that specific build. THIS file is the lowest common denominator —
+# it must not exclude anything that any current build needs.
 
 # --- VCS / editor ---
 .git
@@ -25,8 +30,7 @@
 npm-debug.log
 yarn-error.log
 
-# --- Python / FastAPI agents (not needed in main-app build) ---
-agents/
+# --- Python build artefacts (safe to drop from every build context) ---
 **/__pycache__/
 **/*.pyc
 **/*.pyo
@@ -34,10 +38,16 @@ agents/
 **/venv/
 **/*.egg-info/
 
-# --- HelioGram (separate build context, not needed in main-app) ---
-apps/heliogram/
+# --- App-specific build outputs (always safe to drop) ---
 apps/main-app/frontend/node_modules
 apps/main-app/frontend/dist
+# Note: `agents/` and `apps/heliogram/` USED to be excluded here. They are
+# now allowed because (a) every agent's Dockerfile builds from the repo
+# root and needs `agents/<self>/backend/` in its context, and (b) the
+# main-app build only COPYs `apps/main-app/frontend/` so the extra files
+# only inflate the upload size by a few hundred KB, never the final image.
+# Per-Dockerfile `.dockerignore` files trim the context further for builds
+# that want it (e.g. main-app excludes other agents' code from its upload).
 
 # --- Runtime / logs / local data ---
 .runtime/
