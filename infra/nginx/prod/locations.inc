@@ -9,6 +9,7 @@
 #   /                           -> main-app-frontend
 #   /heliogram/                 -> heliogram-frontend
 #   /api/realtime/events/       -> heliogram-backend (SSE, buffering OFF)
+#   /api/images/                -> image-generator-api  (Framer-compatible API)
 #   /api/image/                 -> image-generator-api  (rewritten to /api/)
 #   /api/video/                 -> video-generator-api  (rewritten to /api/)
 #   /api/campaign/              -> campaign-maker-api   (rewritten to /api/)
@@ -51,6 +52,15 @@ location /api/realtime/events/ {
 }
 
 # ---- AI agent microservices ----
+location /api/images/ {
+  proxy_pass http://image_agent;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}
+
 location /api/image/ {
   rewrite ^/api/image(/.*)$ $1 break;
   proxy_pass http://image_agent;

@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import health, image
-from app.config import SERVICE_NAME
+from app.config import AGENT_CORS_ALLOWED_ORIGINS, SERVICE_NAME
 
 
 @asynccontextmanager
@@ -17,8 +17,8 @@ def create_app() -> FastAPI:
     application = FastAPI(title=f"Helio {SERVICE_NAME}", lifespan=lifespan)
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
+        allow_origins=AGENT_CORS_ALLOWED_ORIGINS,
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
