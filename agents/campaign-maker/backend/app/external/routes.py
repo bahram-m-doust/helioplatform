@@ -6,7 +6,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.external.config import CONFIG
+from app.external.config import DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE
 from app.external.schemas import ChatRequest, ChatResponse
 from app.external.security import require_caller
 from app.services.openrouter import openrouter_chat_with_fallbacks
@@ -44,11 +44,11 @@ def chat(
     try:
         reply = openrouter_chat_with_fallbacks(
             conversation,
-            max_tokens=payload.max_tokens or CONFIG.default_max_tokens,
+            max_tokens=payload.max_tokens or DEFAULT_MAX_TOKENS,
             temperature=(
                 payload.temperature
                 if payload.temperature is not None
-                else CONFIG.default_temperature
+                else DEFAULT_TEMPERATURE
             ),
             service_title="Helio Campaign Maker (external)",
         )

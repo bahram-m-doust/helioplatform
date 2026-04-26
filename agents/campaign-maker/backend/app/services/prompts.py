@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.services.prompt_loader import load_prompt_file
+from agent_common.prompt_loader import load_prompt_file
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / 'prompts'
 MANSORY_PATH = PROMPTS_DIR / 'mansory.txt'

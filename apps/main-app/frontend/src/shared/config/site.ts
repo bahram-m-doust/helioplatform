@@ -1,8 +1,6 @@
 const env = (import.meta as any).env ?? {};
 
 const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
-const defaultCommunityUrl = isLocalHost ? 'http://localhost:5050' : '/community';
 const defaultApiHost = hostname || 'localhost';
 
 // Heliogram (social platform) backend — identity/auth/messaging.
@@ -29,7 +27,9 @@ const fallbackModels = (env.VITE_OPENROUTER_FALLBACK_MODELS?.trim() || '')
 export const OPENROUTER_FALLBACK_MODELS: string[] = fallbackModels.filter(
   (model: string) => model !== OPENROUTER_MODEL,
 );
-export const COMMUNITY_URL: string = env.VITE_COMMUNITY_URL?.trim() || defaultCommunityUrl;
+// COMMUNITY_URL points to the (now-extracted) HelioGram deployment. Empty
+// string hides the community link in the header/footer.
+export const COMMUNITY_URL: string = env.VITE_COMMUNITY_URL?.trim() || '';
 export const OPENROUTER_CHAT_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export const HELIOGRAM_API_BASE_URL: string =

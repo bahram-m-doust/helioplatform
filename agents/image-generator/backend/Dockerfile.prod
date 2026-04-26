@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.6
 # Production image for the image-generator FastAPI microservice.
-# Build context: agents/image-generator/backend
+# Build context: REPO ROOT (so the shared `packages/agent-common` library
+# can be COPY'd in alongside the agent code).
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -9,10 +10,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Shared library: installed once, in editable mode so a hot rebuild that
+# only touches packages/agent-common doesn't have to reinstall everything.
+COPY packages/agent-common /opt/agent-common
+RUN pip install --no-cache-dir -e /opt/agent-common
 
-COPY . .
+# Agent-specific deps + source.
+COPY agents/image-generator/backend/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+COPY agents/image-generator/backend ./
 
 EXPOSE 8020
 

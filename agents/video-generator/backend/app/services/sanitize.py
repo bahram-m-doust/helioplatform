@@ -1,6 +1,17 @@
-"""Guards against leaked system prompts and provider secrets in LLM output."""
+"""Video-generator prompt-leak sanitizer.
+
+Holds the agent-specific marker list and forwards to the shared sanitizer
+in :mod:`agent_common.sanitize`. Keeps the legacy
+``looks_like_instruction_dump`` name as an alias of the shared
+``looks_like_prompt_dump`` so existing routes do not break.
+"""
 
 from __future__ import annotations
+
+from agent_common.sanitize import (
+    looks_like_prompt_dump as _shared_looks_like_prompt_dump,
+    sanitize_provider_message as _shared_sanitize,
+)
 
 PROMPT_LEAK_MARKERS = (
     'you are a cinematic image prompt engineer',
@@ -19,32 +30,22 @@ PROMPT_LEAK_MARKERS = (
     'prompt construction order',
 )
 
-PROVIDER_SECRET_MARKERS = (
-    'seedream',
-    'kling',
-    'openai/gpt-4o',
-    'bytedance',
-    'kwaivgi',
-    'replicate.com',
-)
+# Video has a slightly looser long-text threshold than the image agent.
+_LONG_TEXT_THRESHOLD = 950
 
 
 def looks_like_instruction_dump(text: str) -> bool:
-    normalized = (text or '').strip().lower()
-    if not normalized:
-        return False
-    marker_hits = sum(1 for marker in PROMPT_LEAK_MARKERS if marker in normalized)
-    line_count = sum(1 for line in normalized.splitlines() if line.strip())
-    return marker_hits >= 2 or (len(normalized) > 950 and line_count > 10)
+    return _shared_looks_like_prompt_dump(
+        text,
+        markers=PROMPT_LEAK_MARKERS,
+        long_text_threshold=_LONG_TEXT_THRESHOLD,
+    )
 
 
 def sanitize_provider_message(message: str, fallback: str) -> str:
-    compact = ' '.join((message or '').split()).strip()
-    if not compact:
-        return fallback
-    normalized = compact.lower()
-    if looks_like_instruction_dump(compact) or len(compact) > 420:
-        return fallback
-    if any(marker in normalized for marker in PROVIDER_SECRET_MARKERS):
-        return fallback
-    return compact
+    return _shared_sanitize(
+        message,
+        fallback,
+        markers=PROMPT_LEAK_MARKERS,
+        long_text_threshold=_LONG_TEXT_THRESHOLD,
+    )

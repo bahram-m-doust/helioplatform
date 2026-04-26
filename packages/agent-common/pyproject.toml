@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-common"
+version = "0.1.0"
+description = "Shared services + security primitives reused by every Helio agent backend."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Helio Platform" }]
+dependencies = [
+    "fastapi>=0.115.0,<1",
+    "pydantic>=2.9,<3",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agent_common*"]

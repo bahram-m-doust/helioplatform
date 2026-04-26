@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
-from app.external.config import CONFIG
+from app.external.config import MAX_DURATION, MAX_USER_REQUEST_CHARS, MIN_DURATION
 
 
 _ALLOWED_BRANDS = {"general", "mansory", "technogym", "binghatti"}
@@ -18,7 +18,7 @@ class GenerateRequest(BaseModel):
     user_request: str = Field(
         ...,
         min_length=3,
-        max_length=CONFIG.max_user_request_chars,
+        max_length=MAX_USER_REQUEST_CHARS,
         description="Short scene/motion description.",
     )
     image_url: HttpUrl = Field(
@@ -28,8 +28,8 @@ class GenerateRequest(BaseModel):
     brand: Literal["General", "Mansory", "Technogym", "Binghatti"] = "General"
     duration: int = Field(
         default=5,
-        ge=CONFIG.min_duration,
-        le=CONFIG.max_duration,
+        ge=MIN_DURATION,
+        le=MAX_DURATION,
         description="Duration in seconds.",
     )
 

@@ -5,6 +5,7 @@ import { BrandLogo } from './BrandLogo';
 import { COMMUNITY_URL } from '../config/site';
 
 export function SiteFooter() {
+  const showCommunityLink = Boolean(COMMUNITY_URL);
   const isInternalCommunity = COMMUNITY_URL.startsWith('/');
 
   return (
@@ -83,17 +84,19 @@ export function SiteFooter() {
                   Agent Store
                 </Link>
               </li>
-              <li>
-                {isInternalCommunity ? (
-                  <Link to={COMMUNITY_URL} className="text-sm hover:text-yellow-400 transition-colors">
-                    Community
-                  </Link>
-                ) : (
-                  <a href={COMMUNITY_URL} className="text-sm hover:text-yellow-400 transition-colors">
-                    Community
-                  </a>
-                )}
-              </li>
+              {showCommunityLink && (
+                <li>
+                  {isInternalCommunity ? (
+                    <Link to={COMMUNITY_URL} className="text-sm hover:text-yellow-400 transition-colors">
+                      Community
+                    </Link>
+                  ) : (
+                    <a href={COMMUNITY_URL} className="text-sm hover:text-yellow-400 transition-colors">
+                      Community
+                    </a>
+                  )}
+                </li>
+              )}
               <li>
                 <a href="#" className="text-sm hover:text-yellow-400 transition-colors">
                   Contact

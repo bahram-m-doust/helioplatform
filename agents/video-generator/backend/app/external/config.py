@@ -1,56 +1,24 @@
-"""Runtime configuration for the external (public) video-generator API."""
+"""Video-generator external API config.
+
+Pre-binds the per-agent API-key env-var (``HELIO_EXTERNAL_API_KEYS_VIDEO``);
+shared knobs (allowed origins, rate limits) come from
+:mod:`agent_common.external_config`.
+
+Video renders are expensive, so the rate-limit defaults here are stricter
+than the platform default (10 r/m + burst 4 vs 30 r/m + burst 10).
+"""
 
 from __future__ import annotations
 
-import os
-from dataclasses import dataclass, field
+from agent_common.external_config import ExternalConfig, load_config
 
+CONFIG: ExternalConfig = load_config(
+    api_keys_env='HELIO_EXTERNAL_API_KEYS_VIDEO',
+    rate_per_minute_default=10,
+    rate_burst_default=4,
+)
 
-def _split_csv(raw: str | None) -> list[str]:
-    if not raw:
-        return []
-    return [item.strip() for item in raw.split(",") if item.strip()]
-
-
-def _parse_keys(raw: str | None) -> dict[str, str]:
-    pairs: dict[str, str] = {}
-    for index, item in enumerate(_split_csv(raw)):
-        if ":" in item:
-            label, secret = item.split(":", 1)
-            label = label.strip() or f"key-{index + 1}"
-            secret = secret.strip()
-        else:
-            label, secret = f"key-{index + 1}", item
-        if secret:
-            pairs[label] = secret
-    return pairs
-
-
-@dataclass(frozen=True)
-class ExternalConfig:
-    api_keys: dict[str, str] = field(default_factory=dict)
-    allowed_origins: list[str] = field(default_factory=list)
-    rate_limit_per_minute: int = 10
-    rate_limit_burst: int = 4
-    max_user_request_chars: int = 2000
-    min_duration: int = 1
-    max_duration: int = 10
-
-    @property
-    def enabled(self) -> bool:
-        return bool(self.api_keys)
-
-
-def load_config() -> ExternalConfig:
-    return ExternalConfig(
-        api_keys=_parse_keys(os.getenv("HELIO_EXTERNAL_API_KEYS_VIDEO")),
-        allowed_origins=_split_csv(os.getenv("HELIO_EXTERNAL_ALLOWED_ORIGINS")),
-        rate_limit_per_minute=int(os.getenv("HELIO_EXTERNAL_RATE_PER_MINUTE", "10")),
-        rate_limit_burst=int(os.getenv("HELIO_EXTERNAL_RATE_BURST", "4")),
-        max_user_request_chars=int(os.getenv("HELIO_EXTERNAL_MAX_REQUEST_CHARS", "2000")),
-        min_duration=int(os.getenv("HELIO_EXTERNAL_MIN_DURATION", "1")),
-        max_duration=int(os.getenv("HELIO_EXTERNAL_MAX_DURATION", "10")),
-    )
-
-
-CONFIG = load_config()
+# Video-generator-specific payload caps; consumed by app/external/schemas.py.
+MAX_USER_REQUEST_CHARS = 2000
+MIN_DURATION = 1
+MAX_DURATION = 10

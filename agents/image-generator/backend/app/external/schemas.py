@@ -12,7 +12,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
-from app.external.config import CONFIG
+from app.external.config import MAX_REFERENCE_IMAGES, MAX_USER_REQUEST_CHARS
 
 
 _ALLOWED_BRANDS = {"general", "mansory", "technogym", "binghatti"}
@@ -24,7 +24,7 @@ class GenerateRequest(BaseModel):
     user_request: str = Field(
         ...,
         min_length=3,
-        max_length=CONFIG.max_user_request_chars,
+        max_length=MAX_USER_REQUEST_CHARS,
         description="Plain-English description of what the image should show.",
     )
     brand: Literal["General", "Mansory", "Technogym", "Binghatti"] = Field(
@@ -47,9 +47,9 @@ class GenerateRequest(BaseModel):
     @field_validator("reference_images")
     @classmethod
     def _cap_references(cls, value: list[HttpUrl]) -> list[HttpUrl]:
-        if len(value) > CONFIG.max_reference_images:
+        if len(value) > MAX_REFERENCE_IMAGES:
             raise ValueError(
-                f"reference_images supports up to {CONFIG.max_reference_images} URLs."
+                f"reference_images supports up to {MAX_REFERENCE_IMAGES} URLs."
             )
         return value
 

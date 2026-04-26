@@ -18,6 +18,7 @@ export function SiteHeader({ isAuthenticated, onLoginClick }: SiteHeaderProps) {
   const handleNavClick = () => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
+  const showCommunityLink = Boolean(COMMUNITY_URL);
   const isInternalCommunity = COMMUNITY_URL.startsWith('/');
 
   return (
@@ -52,22 +53,23 @@ export function SiteHeader({ isAuthenticated, onLoginClick }: SiteHeaderProps) {
             >
               Dashboard
             </Link>
-            {isInternalCommunity ? (
-              <Link
-                to={COMMUNITY_URL}
-                onClick={handleNavClick}
-                className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
-              >
-                Community
-              </Link>
-            ) : (
-              <a
-                href={COMMUNITY_URL}
-                className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
-              >
-                Community
-              </a>
-            )}
+            {showCommunityLink &&
+              (isInternalCommunity ? (
+                <Link
+                  to={COMMUNITY_URL}
+                  onClick={handleNavClick}
+                  className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
+                >
+                  Community
+                </Link>
+              ) : (
+                <a
+                  href={COMMUNITY_URL}
+                  className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
+                >
+                  Community
+                </a>
+              ))}
           </nav>
           <div className="flex items-center gap-4">
             {resolvedIsAuthenticated ? (

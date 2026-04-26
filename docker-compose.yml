@@ -63,8 +63,8 @@ services:
 
   image-generator-api:
     build:
-      context: ./agents/image-generator/backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: agents/image-generator/backend/Dockerfile
     container_name: helio-image-generator-api
     restart: unless-stopped
     env_file:
@@ -78,8 +78,8 @@ services:
 
   video-generator-api:
     build:
-      context: ./agents/video-generator/backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: agents/video-generator/backend/Dockerfile
     container_name: helio-video-generator-api
     restart: unless-stopped
     env_file:
@@ -93,8 +93,8 @@ services:
 
   storyteller-api:
     build:
-      context: ./agents/storyteller/backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: agents/storyteller/backend/Dockerfile
     container_name: helio-storyteller-api
     restart: unless-stopped
     env_file:
@@ -108,8 +108,8 @@ services:
 
   campaign-maker-api:
     build:
-      context: ./agents/campaign-maker/backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: agents/campaign-maker/backend/Dockerfile
     container_name: helio-campaign-maker-api
     restart: unless-stopped
     env_file:

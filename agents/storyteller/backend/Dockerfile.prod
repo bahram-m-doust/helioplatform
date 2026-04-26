@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.6
 # Production image for the storyteller FastAPI microservice.
-# Build context: agents/storyteller/backend
+# Build context: REPO ROOT (so packages/agent-common can be COPY'd in).
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -9,10 +9,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY packages/agent-common /opt/agent-common
+RUN pip install --no-cache-dir -e /opt/agent-common
 
-COPY . .
+COPY agents/storyteller/backend/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+COPY agents/storyteller/backend ./
 
 EXPOSE 8040
 

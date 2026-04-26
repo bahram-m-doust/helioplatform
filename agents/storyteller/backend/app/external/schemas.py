@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.external.config import CONFIG
+from app.external.config import MAX_MESSAGE_CHARS, MAX_MESSAGES
 
 
 ChatRole = Literal["user", "assistant"]
@@ -14,7 +14,7 @@ ChatRole = Literal["user", "assistant"]
 
 class ChatMessage(BaseModel):
     role: ChatRole
-    content: str = Field(..., min_length=1, max_length=CONFIG.max_message_chars)
+    content: str = Field(..., min_length=1, max_length=MAX_MESSAGE_CHARS)
 
 
 class ChatRequest(BaseModel):
@@ -33,9 +33,9 @@ class ChatRequest(BaseModel):
     @field_validator("messages")
     @classmethod
     def _cap_history_and_require_user(cls, value: list[ChatMessage]) -> list[ChatMessage]:
-        if len(value) > CONFIG.max_messages:
+        if len(value) > MAX_MESSAGES:
             raise ValueError(
-                f"messages may contain at most {CONFIG.max_messages} entries.",
+                f"messages may contain at most {MAX_MESSAGES} entries.",
             )
         if not any(m.role == "user" and m.content.strip() for m in value):
             raise ValueError("At least one non-empty user message is required.")

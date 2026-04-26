@@ -3,7 +3,6 @@ import { Route, Routes } from 'react-router-dom';
 
 const LandingPage = lazy(() => import('./features/marketing/LandingPage'));
 const ServicesPage = lazy(() => import('./features/marketing/ServicesPage'));
-const CommunityPage = lazy(() => import('./features/marketing/CommunityPage'));
 const BrandCityPage = lazy(() => import('./features/brand-city/BrandCityPage'));
 const QuestionnairePage = lazy(() => import('./features/questionnaire/QuestionnairePage'));
 const QuestionnaireSectionPage = lazy(
@@ -28,7 +27,6 @@ export function AppRoutes() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/services" element={<ServicesPage />} />
-        <Route path="/community" element={<CommunityPage />} />
         <Route path="/brand-city" element={<BrandCityPage />} />
         <Route path="/questionnaire" element={<QuestionnairePage />} />
         <Route path="/questionnaire/:sectionSlug" element={<QuestionnaireSectionPage />} />

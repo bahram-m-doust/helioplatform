@@ -170,8 +170,8 @@ services:
   # ------------------------------------------------------------ agent APIs --
   image-generator-api:
     build:
-      context: ./agents/image-generator/backend
-      dockerfile: Dockerfile.prod
+      context: .
+      dockerfile: agents/image-generator/backend/Dockerfile.prod
     container_name: helio-prod-image-generator
     <<: *default-restart
     environment:
@@ -184,8 +184,8 @@ services:
 
   video-generator-api:
     build:
-      context: ./agents/video-generator/backend
-      dockerfile: Dockerfile.prod
+      context: .
+      dockerfile: agents/video-generator/backend/Dockerfile.prod
     container_name: helio-prod-video-generator
     <<: *default-restart
     environment:
@@ -201,8 +201,8 @@ services:
 
   storyteller-api:
     build:
-      context: ./agents/storyteller/backend
-      dockerfile: Dockerfile.prod
+      context: .
+      dockerfile: agents/storyteller/backend/Dockerfile.prod
     container_name: helio-prod-storyteller
     <<: *default-restart
     environment:
@@ -215,8 +215,8 @@ services:
 
   campaign-maker-api:
     build:
-      context: ./agents/campaign-maker/backend
-      dockerfile: Dockerfile.prod
+      context: .
+      dockerfile: agents/campaign-maker/backend/Dockerfile.prod
     container_name: helio-prod-campaign-maker
     <<: *default-restart
     environment:

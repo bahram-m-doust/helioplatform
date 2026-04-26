@@ -115,16 +115,19 @@ function ensureVenv() {
 }
 
 function ensureRequirements() {
+  // Check both the FastAPI deps AND that agent_common is importable.
+  // agent_common is the shared library at packages/agent-common; without
+  // it the agents won't even load (every services/ module imports from it).
   const check = spawnSync(
     venvPython,
-    ['-c', 'import fastapi, uvicorn, pydantic'],
+    ['-c', 'import fastapi, uvicorn, pydantic, agent_common'],
     { stdio: 'ignore' },
   );
   if ((check.status ?? 1) === 0) {
     return true;
   }
 
-  log('installing FastAPI + uvicorn + pydantic into agents/.venv ...');
+  log('installing FastAPI + uvicorn + pydantic + agent-common into agents/.venv ...');
   const install = spawnSync(
     venvPython,
     [
@@ -136,6 +139,8 @@ function ensureRequirements() {
       'fastapi>=0.115.0,<1',
       'uvicorn[standard]>=0.32.0,<1',
       'pydantic>=2.9,<3',
+      '-e',
+      resolve(rootDir, 'packages', 'agent-common'),
     ],
     { stdio: 'inherit' },
   );
