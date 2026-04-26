@@ -1,7 +1,7 @@
 # Shared proxy rules for the helio-platform edge.
 #
 # Included from BOTH the port-80 default_server (IP fallback) and the
-# port-443 TLS server (platform.helio.ae) so the routing definition stays
+# port-443 TLS server (api.helio.ae) so the routing definition stays
 # in one place. Do NOT define `listen` / `server_name` / `ssl_*` here —
 # those belong to the individual server blocks in nginx.conf.
 #
@@ -13,6 +13,10 @@
 #   /api/video/                 -> video-generator-api  (rewritten to /api/)
 #   /api/campaign/              -> campaign-maker-api   (rewritten to /api/)
 #   /api/storyteller/           -> storyteller-api      (rewritten to /api/)
+#   /v1/image/                  -> image-generator-api  (PUBLIC, X-API-Key)
+#   /v1/video/                  -> video-generator-api  (PUBLIC, X-API-Key)
+#   /v1/storyteller/            -> storyteller-api      (PUBLIC, X-API-Key)
+#   /v1/campaign/               -> campaign-maker-api   (PUBLIC, X-API-Key)
 #   /api/                       -> heliogram-backend (catch-all)
 #   /admin/, /static/, /media/  -> heliogram-backend
 #   /.well-known/acme-challenge/-> /var/www/certbot (Let's Encrypt webroot)
@@ -84,6 +88,55 @@ location /api/campaign/ {
 location /api/storyteller/ {
   rewrite ^/api/storyteller(/.*)$ $1 break;
   proxy_pass http://storyteller_agent;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# ---- Public/external API surface (third-party callers, e.g. Framer) ----
+# Each agent has its own /v1/<slug>/* prefix. nginx applies a per-IP rate
+# limit (defense in depth) and the agent enforces an X-API-Key + per-key
+# bucket. We strip the agent slug so /v1/image/generate -> /v1/generate
+# upstream, which is what each FastAPI external router matches.
+location /v1/image/ {
+  limit_req zone=helio_external burst=30 nodelay;
+  rewrite ^/v1/image(/.*)$ /v1$1 break;
+  proxy_pass http://image_agent;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location /v1/video/ {
+  limit_req zone=helio_external burst=30 nodelay;
+  rewrite ^/v1/video(/.*)$ /v1$1 break;
+  proxy_pass http://video_agent;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location /v1/storyteller/ {
+  limit_req zone=helio_external burst=30 nodelay;
+  rewrite ^/v1/storyteller(/.*)$ /v1$1 break;
+  proxy_pass http://storyteller_agent;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location /v1/campaign/ {
+  limit_req zone=helio_external burst=30 nodelay;
+  rewrite ^/v1/campaign(/.*)$ /v1$1 break;
+  proxy_pass http://campaign_agent;
   proxy_http_version 1.1;
   proxy_set_header Host $host;
   proxy_set_header X-Real-IP $remote_addr;

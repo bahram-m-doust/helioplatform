@@ -31,6 +31,12 @@ x-agent-env: &agent-env
   CAMPAIGN_MAKER_LLM_MODEL: ${CAMPAIGN_MAKER_LLM_MODEL:-openai/gpt-4o}
   CAMPAIGN_MAKER_FALLBACK_MODELS: ${CAMPAIGN_MAKER_FALLBACK_MODELS:-}
   FRONTEND_URL: ${PUBLIC_URL:-http://103.174.102.124}
+  # External /v1/* API config. Each agent reads only its own key var, so an
+  # operator can rotate (or disable) one agent's external surface without
+  # touching the others. Per-agent overrides are set on the service blocks.
+  HELIO_EXTERNAL_ALLOWED_ORIGINS: ${HELIO_EXTERNAL_ALLOWED_ORIGINS:-}
+  HELIO_EXTERNAL_RATE_PER_MINUTE: ${HELIO_EXTERNAL_RATE_PER_MINUTE:-30}
+  HELIO_EXTERNAL_RATE_BURST: ${HELIO_EXTERNAL_RATE_BURST:-10}
 
 services:
   # ---------------------------------------------------------------- database
@@ -68,14 +74,14 @@ services:
       # Defaults cover both the bare IP and the primary public domain so the
       # stack keeps working during DNS propagation. Override in .env.prod to
       # add / remove hosts without rebuilding.
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-103.174.102.124,platform.helio.ae,localhost}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-103.174.102.124,api.helio.ae,localhost}
       ALLOW_LAN_DEV_ORIGINS: "False"
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://103.174.102.124,http://platform.helio.ae,https://platform.helio.ae}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://103.174.102.124,http://api.helio.ae,https://api.helio.ae}
       # CSRF_TRUSTED_ORIGINS must include every full origin (scheme + host[:port])
       # that will POST to /admin/login/ or any other Django form endpoint. If
       # empty, settings.py falls back to an auto-derived list from CORS +
       # ALLOWED_HOSTS, which is usually enough for single-host HTTP deployments.
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://103.174.102.124,http://platform.helio.ae,https://platform.helio.ae}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://103.174.102.124,http://api.helio.ae,https://api.helio.ae}
       # Keep both of these False while the public URL is plain HTTP — otherwise
       # the browser refuses to store the session/CSRF cookies and admin login
       # fails with 403. Flip them to True the moment HTTPS is added in front.
@@ -83,7 +89,7 @@ services:
       CSRF_COOKIE_SECURE: ${CSRF_COOKIE_SECURE:-False}
       # Canonical frontend URL used to build absolute links (password-reset
       # emails, etc.). Point it at whatever users type in the address bar.
-      FRONTEND_URL: ${FRONTEND_URL:-http://platform.helio.ae/heliogram}
+      FRONTEND_URL: ${FRONTEND_URL:-http://api.helio.ae/heliogram}
       APP_NAME: ${APP_NAME:-HelioGram}
       DEFAULT_LOCALE: ${DEFAULT_LOCALE:-en}
       # --- Database ---
@@ -140,8 +146,8 @@ services:
       # IMPORTANT: Keep these VITE_* defaults as **relative / same-origin**
       # paths. A production user might reach the app via several URLs:
       #   * http://103.174.102.124       (bare IP, during DNS propagation)
-      #   * http://platform.helio.ae     (canonical domain)
-      #   * https://platform.helio.ae    (once TLS is in front)
+      #   * http://api.helio.ae     (canonical domain)
+      #   * https://api.helio.ae    (once TLS is in front)
       # Baking an absolute URL into the bundle forces cross-origin calls for
       # two of the three cases. A relative base makes the browser call the
       # same host that served the bundle — nginx already routes
@@ -172,6 +178,7 @@ services:
       <<: *agent-env
       SERVICE_NAME: image-generator
       PORT: "8020"
+      HELIO_EXTERNAL_API_KEYS_IMAGE: ${HELIO_EXTERNAL_API_KEYS_IMAGE:-}
     expose:
       - "8020"
 
@@ -185,6 +192,10 @@ services:
       <<: *agent-env
       SERVICE_NAME: video-generator
       PORT: "8030"
+      HELIO_EXTERNAL_API_KEYS_VIDEO: ${HELIO_EXTERNAL_API_KEYS_VIDEO:-}
+      # Video renders are expensive — override the shared rate-limit defaults.
+      HELIO_EXTERNAL_RATE_PER_MINUTE: ${HELIO_EXTERNAL_VIDEO_RATE_PER_MINUTE:-10}
+      HELIO_EXTERNAL_RATE_BURST: ${HELIO_EXTERNAL_VIDEO_RATE_BURST:-4}
     expose:
       - "8030"
 
@@ -198,6 +209,7 @@ services:
       <<: *agent-env
       SERVICE_NAME: storyteller
       PORT: "8040"
+      HELIO_EXTERNAL_API_KEYS_STORYTELLER: ${HELIO_EXTERNAL_API_KEYS_STORYTELLER:-}
     expose:
       - "8040"
 
@@ -211,6 +223,7 @@ services:
       <<: *agent-env
       SERVICE_NAME: campaign-maker
       PORT: "8050"
+      HELIO_EXTERNAL_API_KEYS_CAMPAIGN: ${HELIO_EXTERNAL_API_KEYS_CAMPAIGN:-}
     expose:
       - "8050"
 
