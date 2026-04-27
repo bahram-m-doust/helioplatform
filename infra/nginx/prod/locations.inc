@@ -6,21 +6,15 @@
 # those belong to the individual server blocks in nginx.conf.
 #
 # Routing map (public URL -> upstream):
-#   /                           -> main-app-frontend
-#   /heliogram/                 -> heliogram-frontend
-#   /api/realtime/events/       -> heliogram-backend (SSE, buffering OFF)
-#   /api/image/                 -> image-generator-api  (rewritten to /api/)
-#   /api/video/                 -> video-generator-api  (rewritten to /api/)
-#   /api/campaign/              -> campaign-maker-api   (rewritten to /api/)
-#   /api/storyteller/           -> storyteller-api      (rewritten to /api/)
-#   /v1/image/                  -> image-generator-api  (PUBLIC, X-API-Key)
-#   /v1/video/                  -> video-generator-api  (PUBLIC, X-API-Key)
-#   /v1/storyteller/            -> storyteller-api      (PUBLIC, X-API-Key)
-#   /v1/campaign/               -> campaign-maker-api   (PUBLIC, X-API-Key)
-#   /api/tenant/                -> tenant-api           (Supabase JWT)
-#   /api/                       -> heliogram-backend (catch-all)
-#   /admin/, /static/, /media/  -> heliogram-backend
-#   /.well-known/acme-challenge/-> /var/www/certbot (Let's Encrypt webroot)
+#   /                           -> per-host root SPA (see ``map`` in nginx.conf)
+#   /api/image/                 -> image-generator-api      (rewritten to /api/)
+#   /api/video/                 -> video-generator-api      (rewritten to /api/)
+#   /api/storyteller/           -> storyteller-api          (rewritten to /api/)
+#   /api/campaign/              -> campaign-maker-api       (rewritten to /api/)
+#   /api/soul-print/            -> soul-print-api           (rewritten to /api/)
+#   /v1/<agent>/                -> <agent>-api              (PUBLIC, X-API-Key)
+#   /api/tenant/                -> tenant-api               (Supabase JWT)
+#   /.well-known/acme-challenge/-> /var/www/certbot         (Let's Encrypt webroot)
 
 client_max_body_size 50M;
 
@@ -39,23 +33,10 @@ location /.well-known/acme-challenge/ {
   try_files $uri =404;
 }
 
-# ---- Server-Sent Events (must be first, more specific than /api/) ----
-location /api/realtime/events/ {
-  proxy_pass http://heliogram_backend/api/realtime/events/;
-  proxy_http_version 1.1;
-  proxy_set_header Host $host;
-  proxy_set_header X-Real-IP $remote_addr;
-  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header X-Forwarded-Proto $scheme;
-  proxy_set_header Connection "";
-
-  proxy_buffering off;
-  proxy_cache off;
-  chunked_transfer_encoding off;
-  proxy_read_timeout 24h;
-}
-
-# ---- AI agent microservices ----
+# ---- AI agent microservices (internal: /api/<agent>/...) ----
+# Reached by the same-origin admin SPA through nginx; the upstream
+# FastAPI services listen only on the docker network so they are never
+# directly exposed to the public internet.
 location /api/image/ {
   rewrite ^/api/image(/.*)$ $1 break;
   proxy_pass http://image_agent;
@@ -178,52 +159,6 @@ location /api/tenant/ {
   proxy_set_header X-Real-IP $remote_addr;
   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
   proxy_set_header X-Forwarded-Proto $scheme;
-}
-
-# ---- HelioGram backend (catch-all API + admin + static/media) ----
-location /api/ {
-  proxy_pass http://heliogram_backend;
-  proxy_http_version 1.1;
-  proxy_set_header Host $host;
-  proxy_set_header X-Real-IP $remote_addr;
-  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header X-Forwarded-Proto $scheme;
-}
-
-location /admin/ {
-  proxy_pass http://heliogram_backend;
-  proxy_http_version 1.1;
-  proxy_set_header Host $host;
-  proxy_set_header X-Real-IP $remote_addr;
-  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header X-Forwarded-Proto $scheme;
-}
-
-location /static/ {
-  proxy_pass http://heliogram_backend;
-  proxy_http_version 1.1;
-  proxy_set_header Host $host;
-  expires 30d;
-  add_header Cache-Control "public, max-age=2592000";
-}
-
-location /media/ {
-  proxy_pass http://heliogram_backend;
-  proxy_http_version 1.1;
-  proxy_set_header Host $host;
-}
-
-# ---- HelioGram community SPA (served under /heliogram) ----
-location /heliogram/ {
-  proxy_pass http://heliogram_frontend/heliogram/;
-  proxy_http_version 1.1;
-  proxy_set_header Host $host;
-  proxy_set_header X-Real-IP $remote_addr;
-  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header X-Forwarded-Proto $scheme;
-}
-location = /heliogram {
-  return 301 /heliogram/;
 }
 
 # ---- Root SPA (per-host) ----

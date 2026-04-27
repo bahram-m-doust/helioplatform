@@ -3,13 +3,13 @@
 # Public surface:
 #   - edge-nginx  :80 → the only container with a published port.
 #
-# Everything else (main-app SPA, heliogram SPA + Django, agent APIs, Postgres)
-# is reachable only inside the internal docker network. This enforces
+# Everything else (main-app SPA, admin SPA, 5 agent APIs, tenant-api) is
+# reachable only inside the internal docker network. This enforces
 # "all traffic through nginx" at the network layer, not just by convention.
 #
 # Usage:
 #   cp .env.prod.example .env.prod
-#   # fill in SECRET_KEY, DJANGO_SUPERUSER_*, OPENROUTER_API_KEY, REPLICATE_API_TOKEN, ...
+#   # fill in OPENROUTER_API_KEY, REPLICATE_API_TOKEN, SUPABASE_*, ...
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 #
 # The dev stack lives in docker-compose.yml and is not affected by this file.
@@ -40,105 +40,6 @@ x-agent-env: &agent-env
   HELIO_EXTERNAL_RATE_BURST: ${HELIO_EXTERNAL_RATE_BURST:-10}
 
 services:
-  # ---------------------------------------------------------------- database
-  db:
-    image: postgres:16-alpine
-    container_name: helio-prod-db
-    <<: *default-restart
-    environment:
-      POSTGRES_DB: ${DB_NAME:-heliogram}
-      POSTGRES_USER: ${DB_USER:-heliogram}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-heliogram}
-    volumes:
-      - prod_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-heliogram} -d ${DB_NAME:-heliogram}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # -------------------------------------------------------- heliogram backend
-  heliogram-backend:
-    build:
-      context: ./apps/heliogram
-      dockerfile: backend/Dockerfile.prod
-    container_name: helio-prod-heliogram-backend
-    <<: *default-restart
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      # --- Django core ---
-      DJANGO_SETTINGS_MODULE: heliogram_core.settings
-      DEBUG: "False"
-      SECRET_KEY: ${SECRET_KEY}
-      # Defaults cover both the bare IP and the primary public domain so the
-      # stack keeps working during DNS propagation. Override in .env.prod to
-      # add / remove hosts without rebuilding.
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-103.174.102.124,api.helio.ae,localhost}
-      ALLOW_LAN_DEV_ORIGINS: "False"
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://103.174.102.124,http://api.helio.ae,https://api.helio.ae}
-      # CSRF_TRUSTED_ORIGINS must include every full origin (scheme + host[:port])
-      # that will POST to /admin/login/ or any other Django form endpoint. If
-      # empty, settings.py falls back to an auto-derived list from CORS +
-      # ALLOWED_HOSTS, which is usually enough for single-host HTTP deployments.
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://103.174.102.124,http://api.helio.ae,https://api.helio.ae}
-      # Keep both of these False while the public URL is plain HTTP — otherwise
-      # the browser refuses to store the session/CSRF cookies and admin login
-      # fails with 403. Flip them to True the moment HTTPS is added in front.
-      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-False}
-      CSRF_COOKIE_SECURE: ${CSRF_COOKIE_SECURE:-False}
-      # Canonical frontend URL used to build absolute links (password-reset
-      # emails, etc.). Point it at whatever users type in the address bar.
-      FRONTEND_URL: ${FRONTEND_URL:-http://api.helio.ae/heliogram}
-      APP_NAME: ${APP_NAME:-HelioGram}
-      DEFAULT_LOCALE: ${DEFAULT_LOCALE:-en}
-      # --- Database ---
-      USE_SQLITE: "False"
-      DB_ENGINE: django.db.backends.postgresql
-      DB_NAME: ${DB_NAME:-heliogram}
-      DB_USER: ${DB_USER:-heliogram}
-      DB_PASSWORD: ${DB_PASSWORD:-heliogram}
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_CONN_MAX_AGE: ${DB_CONN_MAX_AGE:-60}
-      # --- JWT ---
-      JWT_ACCESS_TOKEN_LIFETIME: ${JWT_ACCESS_TOKEN_LIFETIME:-30}
-      JWT_REFRESH_TOKEN_LIFETIME: ${JWT_REFRESH_TOKEN_LIFETIME:-10080}
-      # --- Storage / uploads ---
-      STORAGE_ROOT: /app/server/storage
-      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-52428800}
-      # --- Superuser bootstrap (entrypoint.prod.sh consumes these) ---
-      DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME}
-      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
-      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL}
-      # --- Email (optional) ---
-      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
-      EMAIL_HOST: ${EMAIL_HOST:-}
-      EMAIL_PORT: ${EMAIL_PORT:-587}
-      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
-      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
-    volumes:
-      - prod_heliogram_storage:/app/server/storage
-      - prod_heliogram_media:/app/server/media
-      - prod_heliogram_static:/app/server/staticfiles
-    expose:
-      - "8010"
-
-  # ------------------------------------------------------- heliogram frontend
-  heliogram-frontend:
-    build:
-      context: ./apps/heliogram
-      dockerfile: frontend/Dockerfile.prod
-      args:
-        HELIOGRAM_BASE_PATH: /heliogram/
-    container_name: helio-prod-heliogram-frontend
-    <<: *default-restart
-    depends_on:
-      - heliogram-backend
-    expose:
-      - "80"
-
   # ---------------------------------------------------------------- main-app
   main-app-frontend:
     build:
@@ -278,8 +179,6 @@ services:
     <<: *default-restart
     depends_on:
       - main-app-frontend
-      - heliogram-frontend
-      - heliogram-backend
       - image-generator-api
       - video-generator-api
       - storyteller-api
@@ -299,8 +198,9 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - /var/www/certbot:/var/www/certbot:ro
 
-volumes:
-  prod_postgres_data:
-  prod_heliogram_storage:
-  prod_heliogram_media:
-  prod_heliogram_static:
+# Phase 6 retired the local Postgres + heliogram volumes; tenant data
+# now lives in Supabase, agent runs are append-only there too. If you
+# are upgrading from a pre-Phase-6 deployment with those volumes still
+# present, run ``docker volume rm helio-platform-prod_prod_postgres_data
+# helio-platform-prod_prod_heliogram_{storage,media,static}`` after
+# extracting whatever you need to keep.

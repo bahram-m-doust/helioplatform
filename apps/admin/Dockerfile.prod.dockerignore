@@ -4,7 +4,6 @@ scripts/
 docs/
 services/
 apps/main-app/
-apps/heliogram/
 packages/
 **/node_modules
 **/dist

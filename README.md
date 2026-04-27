@@ -1,91 +1,112 @@
-# Helio Platform
+# Helio Platform — backend API monorepo
 
-Monorepo structure aligned with the target foldering:
+Pure API backend for the Helio platform. Five FastAPI agents + one
+control-plane service + a small admin SPA. The customer-facing site
+lives on Framer (`platform.helio.ae`); this repo is `api.helio.ae` +
+`admin.helio.ae` only.
 
-- `apps/main-app/frontend` main website (Vite + React + TypeScript)
-- `apps/heliogram/frontend` community frontend
-- `apps/heliogram/backend` community backend (Django)
-- `agents/*` reserved per-agent frontend/backend slices
-- `infra/*` runtime scripts + nginx/certbot templates
+## Layout
 
-## Architecture (source of truth)
+```
+helio-platform/
+├── apps/
+│   ├── admin/                  # Internal admin SPA (Vite + React + Supabase)
+│   └── main-app/               # Tiny questionnaire shell (will be retired
+│                               # once the Framer flow takes over)
+├── services/
+│   └── tenant-api/             # FastAPI control plane (brand CRUD, key
+│                               # issuance, Framer invites, /me/usage)
+├── agents/
+│   ├── image-generator/        # FastAPI :8020  Seedream 4.5
+│   ├── video-generator/        # FastAPI :8030  Kling v2.5
+│   ├── storyteller/            # FastAPI :8040  multi-profile chat
+│   ├── campaign-maker/         # FastAPI :8050  multi-brand chat
+│   └── soul-print/             # FastAPI :8070  Brand-as-City chat
+├── packages/
+│   └── agent-common/           # Shared Python lib (security, openrouter,
+│                               # replicate, sanitize, tenant resolver, audit)
+├── infra/
+│   ├── nginx/prod/             # Edge nginx — TLS for api.helio.ae +
+│   │                           #                       admin.helio.ae
+│   ├── supabase/               # Migrations + RLS policies + pgTAP tests
+│   └── scripts/                # agents-up.mjs (dev-only orchestrator)
+├── docker-compose.prod.yml
+└── docker-compose.yml          # Dev: agents only
+```
 
-- Generation APIs for image and video currently live in the Heliogram Django backend:
-  - Image: [apps/heliogram/backend/apps/agents/image_generator/api.py](apps/heliogram/backend/apps/agents/image_generator/api.py)
-  - Video: [apps/heliogram/backend/apps/agents/video_generator/api.py](apps/heliogram/backend/apps/agents/video_generator/api.py)
-- `agents/*` at the repo root host per-agent UI and FastAPI scaffolding (health only for now). They are intentionally thin; the runtime behavior stays in Heliogram until a dedicated microservice is introduced.
-- Shared prompt loading utility: [apps/heliogram/backend/heliogram_core/prompt_loader.py](apps/heliogram/backend/heliogram_core/prompt_loader.py).
+## Architecture
 
-## Editing System prompts without changing code
+- **Auth**: Supabase JWT (browser) **or** per-brand `X-API-Key`
+  (server-to-server). Agents validate either via the shared
+  `packages/agent-common.tenant.require_tenant` dependency.
+- **Tenancy**: every request resolves to one `brand_id`. Agents apply
+  per-brand prompt overrides (`brand_agents.config_json`), gate spend
+  via `consume_brand_quota`, and append an audit row to
+  `agent_runs` on every call.
+- **Cost tracking**: `brand_cost_summary` view aggregates `agent_runs`
+  per (brand, agent, month). Surfaced in the admin app's
+  `/usage` page.
+- **Backwards compatibility**: when `SUPABASE_URL` is unset every agent
+  falls back to legacy env-var X-API-Key validation. Useful for local
+  dev without a Supabase account.
 
-All LLM system prompts for image and video are loaded from plain text files on disk, with a safe in-code fallback. Edit the file, restart the backend, and the new prompt takes effect.
+## Running locally
 
-- Image generator prompts: `apps/heliogram/backend/apps/agents/image_generator/prompts/`
-  - `image_prompt_system.txt`
-  - `prompt_repair.txt`
-- Video generator prompts: `apps/heliogram/backend/apps/agents/video_generator/prompts/`
-  - `kling.txt`
-  - `video_image_prompt_system.txt`
-  - `video_prompt_repair.txt`
+Two paths — pick one.
 
-Both `.txt` and `.md` are supported (content is read literally and passed as the system message).
+### A. Docker (recommended for full-stack tests)
 
-## Local Run
+```bash
+cp .env.example .env
+$EDITOR .env                            # set OPENROUTER_API_KEY at minimum
+docker compose up -d --build            # builds agents only (no DB needed)
+```
 
-1. Install root dependencies:
-   ```bash
-   npm install
-   ```
-2. Copy root env:
-   ```bash
-   cp .env.example .env
-   ```
-3. Start everything:
-   ```bash
-   npm run dev
-   ```
+Agents reach `localhost:8020`, `8030`, `8040`, `8050`, `8070`.
 
-`npm run dev`:
-- starts Community via `infra/scripts/community-up.mjs` (`COMMUNITY_RUN_MODE` default: `native`)
-- starts main site on `http://localhost:4000`
+### B. Native venv (for fast iteration on agents)
 
-Expected URLs:
-- Main site: `http://localhost:4000`
-- HelioGram frontend: `http://localhost:5050`
-- HelioGram backend: `http://localhost:8010`
-- Health: `http://localhost:8010/api/health/`
+```bash
+cp .env.example .env
+$EDITOR .env
+npm install                             # only needed for the JS dev tools
+npm run agents:up                       # spawns 5 uvicorns into agents/.venv
+```
 
-## Useful Commands
+The admin SPA dev server runs separately:
 
-- `npm run community:up`
-- `npm run community:down`
-- `npm run community:logs`
-- `npm run build`
-- `npm run lint`
+```bash
+cd apps/admin
+npm install
+VITE_SUPABASE_URL=... VITE_SUPABASE_ANON_KEY=... npm run dev
+```
 
-## Environment (Root `.env`)
+## Editing system prompts
 
-- `VITE_OPENROUTER_API_KEY`
-- `VITE_OPENROUTER_MODEL` (default: `openai/gpt-4o`)
-- `VITE_OPENROUTER_FALLBACK_MODELS`
-- `VITE_COMMUNITY_URL` (default: `http://localhost:5050`)
-- `VITE_HELIOGRAM_API_BASE_URL` (recommended in LAN/VPS; example `http://localhost:8010`)
-- `VITE_IMAGE_PROMPT_API_URL` / `VITE_IMAGE_GENERATION_API_URL` (optional overrides)
-- `VITE_VIDEO_IMAGE_PROMPT_API_URL` / `VITE_VIDEO_PROMPT_FROM_IMAGE_API_URL` / `VITE_VIDEO_GENERATION_API_URL` (optional overrides)
-- `REPLICATE_API_TOKEN`
-- `REPLICATE_IMAGE_MODEL` (default: `bytedance/seedream-4.5`)
-- `REPLICATE_VIDEO_MODEL` (default: `kwaivgi/kling-v2.5-turbo-pro`)
-- `IMAGE_PROMPT_LLM_MODEL` (default: `openai/gpt-4o`)
-- `VIDEO_PROMPT_LLM_MODEL` (default: `openai/gpt-4o`)
-- `COMMUNITY_RUN_MODE` (`native|docker|auto`, default: `native`)
-- `COMMUNITY_BACKEND_PORT` (default: `8010`)
-- `COMMUNITY_FRONTEND_PORT` (default: `5050`)
-- `COMMUNITY_AUTO_MIGRATE` (default: `true`)
+Each agent loads its system prompt from a plain text file under
+`agents/<name>/backend/app/prompts/`:
 
-## Deploy
+```
+agents/image-generator/backend/app/prompts/{image_prompt_system,prompt_repair}.txt
+agents/video-generator/backend/app/prompts/{kling,video_image_prompt_system,video_prompt_repair}.txt
+agents/storyteller/backend/app/prompts/{brand-language,language-style}.txt
+agents/campaign-maker/backend/app/prompts/{binghatti,mansory,technogym}.txt
+agents/soul-print/backend/app/prompts/soul_print.txt
+```
 
-Production guide:
-- [DEPLOY.md](DEPLOY.md)
+Edit the file, restart the affected agent, and the new prompt takes
+effect immediately. Per-brand overrides live in
+`brand_agents.config_json.system_prompt_override` (see
+`infra/supabase/migrations/0007_brand_agent_config_schema.sql`).
 
-HelioGram app notes:
-- [apps/heliogram/README.md](apps/heliogram/README.md)
+## Deployment
+
+See [DEPLOY.md](DEPLOY.md) for the production runbook (DNS, TLS,
+Supabase migrations, smoke checks, troubleshooting).
+
+## HelioGram
+
+The community / messaging app that used to live in `apps/heliogram/`
+was extracted to its own repo at the end of Phase 6. The history is
+preserved on the `heliogram-extract` branch in this repo and can be
+pushed to `github.com/helio/heliogram` when needed.

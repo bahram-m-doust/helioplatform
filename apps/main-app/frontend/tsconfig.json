@@ -29,8 +29,6 @@
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "../../../heliogram",
-    "../../../platform/apps/heliogram"
+    "dist"
   ]
 }

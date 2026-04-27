@@ -1,66 +1,10 @@
 name: helio-platform
 
+# Dev stack — agent backends only. Heliogram (Phase 6 extracted to its
+# own repo) and Postgres (Supabase replaces it) are gone. Run with:
+#   docker compose --env-file .env up -d
+
 services:
-  db:
-    image: postgres:16-alpine
-    container_name: heliogram-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${DB_NAME:-heliogram}
-      POSTGRES_USER: ${DB_USER:-heliogram}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-heliogram}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-heliogram} -d ${DB_NAME:-heliogram}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  heliogram-backend:
-    build:
-      context: ./apps/heliogram
-      dockerfile: backend/Dockerfile
-    container_name: heliogram-backend
-    restart: unless-stopped
-    env_file:
-      - ./apps/heliogram/.env
-    environment:
-      USE_SQLITE: "False"
-      DB_ENGINE: django.db.backends.postgresql
-      DB_HOST: db
-      DB_PORT: 5432
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5050}
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ./apps/heliogram/backend/storage:/app/server/storage
-      - ./apps/heliogram/backend/media:/app/server/media
-      - ./apps/heliogram/backend/staticfiles:/app/server/staticfiles
-    # SECURITY: backend is NOT exposed publicly. Traffic must come through
-    # the frontend nginx container (heliogram-frontend) which lives on the
-    # same docker network and proxies /api/ to backend:8010.
-    # We still bind to 127.0.0.1 on the host so an edge reverse proxy on
-    # the host machine (e.g. infra/nginx) can reach it via loopback only.
-    # Override HELIO_BACKEND_BIND to an empty value to disable host binding
-    # entirely (pure docker-network mode).
-    ports:
-      - "${HELIO_BACKEND_BIND:-127.0.0.1}:${HELIO_BACKEND_PORT:-8010}:8010"
-    expose:
-      - "8010"
-
-  heliogram-frontend:
-    build:
-      context: ./apps/heliogram
-      dockerfile: frontend/Dockerfile
-    container_name: heliogram-frontend
-    restart: unless-stopped
-    depends_on:
-      - heliogram-backend
-    ports:
-      - "${HELIO_FRONTEND_PORT:-5050}:80"
-
   image-generator-api:
     build:
       context: .
@@ -121,5 +65,17 @@ services:
     ports:
       - "${CAMPAIGN_MAKER_AGENT_PORT:-8050}:8050"
 
-volumes:
-  postgres_data:
+  soul-print-api:
+    build:
+      context: .
+      dockerfile: agents/soul-print/backend/Dockerfile
+    container_name: helio-soul-print-api
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      SERVICE_NAME: soul-print
+      PORT: "8070"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4000}
+    ports:
+      - "${SOUL_PRINT_AGENT_PORT:-8070}:8070"
