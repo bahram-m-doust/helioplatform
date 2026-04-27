@@ -17,10 +17,11 @@ import { SiteFooter } from '../../shared/layout/SiteFooter';
 const agents = [
   {
     icon: PenTool,
-    title: "Detail Design",
-    short: "An intelligent agent for generating detailed design specifications and creative assets.",
-    long: "An intelligent agent dedicated to generating detailed design specifications, creative assets, and visual blueprints. It ensures that every design element aligns perfectly with your brand's core identity and visual guidelines.",
-    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4"
+    title: "Soul Print",
+    short: "Build a complete soul print journey across media and brand touchpoints.",
+    long: "Soul Print helps you turn your brand essence into cohesive experiences across content, campaigns, physical spaces, and digital channels. It keeps storytelling, tone, and creative direction aligned end-to-end.",
+    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+    route: "/soul-print"
   },
   {
     icon: BookOpen,

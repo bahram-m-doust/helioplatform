@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
-import { COMMUNITY_URL } from '../config/site';
 import { useAuth } from '../../features/auth/AuthContext';
 
 interface SiteHeaderProps {
@@ -18,75 +17,61 @@ export function SiteHeader({ isAuthenticated, onLoginClick }: SiteHeaderProps) {
   const handleNavClick = () => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
-  const isInternalCommunity = COMMUNITY_URL.startsWith('/');
+  const navBaseClass =
+    'inline-flex h-11 items-center rounded-[10px] px-3 text-sm font-medium tracking-[-0.01em] leading-[1.6em] text-[rgba(28,22,41,0.9)] transition-colors hover:bg-[rgba(255,245,227,0.8)]';
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <Link to="/" onClick={handleNavClick} aria-label="Go to home">
-            <BrandLogo variant="header" imageClassName="h-10 w-auto sm:h-11" />
+    <>
+      <header className="fixed left-1/2 top-[25px] z-50 w-[840px] max-w-full -translate-x-1/2 rounded-[10px] border border-white bg-[linear-gradient(180deg,rgba(246,241,252,0.5)_0%,rgba(255,255,255,0.5)_100%)] px-5 py-2.5 backdrop-blur-[5px] shadow-[0_0.8px_0.8px_-1px_rgba(0,0,0,0.04),0_2.4px_2.4px_-2px_rgba(0,0,0,0.04),0_6.4px_6.4px_-3px_rgba(0,0,0,0.03),0_20px_20px_-4px_rgba(0,0,0,0.01)]">
+        <div className="flex items-center justify-between gap-3">
+          <Link to="/" onClick={handleNavClick} aria-label="Go to home" className="flex h-[35px] w-[58px] items-center">
+            <BrandLogo variant="header" imageClassName="h-auto w-[55px]" />
           </Link>
-          <nav className="hidden md:flex items-center gap-8">
-            <Link
-              to="/services"
-              onClick={handleNavClick}
-              className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
-            >
-              Services
-            </Link>
-            <a href="#" className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors">
-              Works
-            </a>
-            <Link
-              to="/agent-store"
-              onClick={handleNavClick}
-              className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
-            >
-              Agent Store
-            </Link>
-            <Link
-              to="/brand-city"
-              onClick={handleNavClick}
-              className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
-            >
-              Dashboard
-            </Link>
-            {isInternalCommunity ? (
-              <Link
-                to={COMMUNITY_URL}
-                onClick={handleNavClick}
-                className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
-              >
-                Community
-              </Link>
-            ) : (
-              <a
-                href={COMMUNITY_URL}
-                className="text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
-              >
+
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+            <nav className="hidden min-w-0 flex-1 items-center justify-center gap-2.5 md:flex">
+              <a href="https://platform.helio.ae/services" className={navBaseClass}>
+                Services
+              </a>
+              <a href="https://platform.helio.ae/works" className={navBaseClass}>
+                Works
+              </a>
+              <a href="https://platform.helio.ae/agent-store" className={navBaseClass}>
+                Agent Store
+              </a>
+              <a href="https://api.helio.ae/brand-city" rel="noopener" className={navBaseClass}>
+                Dashboard
+              </a>
+              <a href="https://api.helio.ae/heliogram" rel="noopener" className={navBaseClass}>
                 Community
               </a>
-            )}
-          </nav>
-          <div className="flex items-center gap-4">
+              <a href="https://platform.helio.ae/pricing" className={navBaseClass}>
+                Pricing
+              </a>
+            </nav>
+
             {resolvedIsAuthenticated ? (
-              <span className="text-sm font-medium text-neutral-900 px-4">Admin</span>
+              <span className="hidden h-11 items-center rounded-lg px-5 text-sm font-medium tracking-[-0.03em] text-neutral-900 md:inline-flex">
+                Admin
+              </span>
             ) : (
               <button
                 type="button"
                 onClick={handleLoginClick}
-                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all bg-yellow-400 text-neutral-900 hover:bg-yellow-500 h-9 px-4"
+                className="hidden h-11 items-center justify-center whitespace-nowrap rounded-[8px] bg-[#fcb022] px-5 text-sm font-medium tracking-[-0.03em] text-black transition-colors hover:bg-[#e89e10] md:inline-flex"
               >
-                Log in
+                Login
               </button>
             )}
-            <button type="button" className="md:hidden p-2 text-neutral-700">
-              <Menu className="w-5 h-5" />
+
+            <button type="button" className="rounded-md p-2 text-neutral-700 md:hidden" aria-label="Open navigation menu">
+              <Menu className="h-5 w-5" />
             </button>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <div aria-hidden className="h-[96px]" />
+    </>
   );
 }
