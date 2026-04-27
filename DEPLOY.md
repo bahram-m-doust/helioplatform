@@ -302,21 +302,21 @@ host served it.
 
 1. Create an `A` record on your DNS provider (Cloudflare, Route53, …):
    ```
-   platform.helio.ae   A   103.174.102.124   Proxy: DNS-only (or "grey cloud")
+   api.helio.ae   A   103.174.102.124   Proxy: DNS-only (or "grey cloud")
    ```
    Start with DNS-only. Enabling a CDN / orange-cloud proxy is the
    easiest way to get TLS (see §6b.3 below), but do it *after*
    verifying HTTP works end-to-end.
 
-2. Verify propagation: `dig +short platform.helio.ae` should return
+2. Verify propagation: `dig +short api.helio.ae` should return
    `103.174.102.124` from any machine.
 
 3. Add the new hostname everywhere in `.env.prod`:
    ```bash
-   ALLOWED_HOSTS=103.174.102.124,platform.helio.ae,localhost
-   CORS_ALLOWED_ORIGINS=http://103.174.102.124,http://platform.helio.ae,https://platform.helio.ae
-   CSRF_TRUSTED_ORIGINS=http://103.174.102.124,http://platform.helio.ae,https://platform.helio.ae
-   FRONTEND_URL=http://platform.helio.ae/heliogram
+   ALLOWED_HOSTS=103.174.102.124,api.helio.ae,localhost
+   CORS_ALLOWED_ORIGINS=http://103.174.102.124,http://api.helio.ae,https://api.helio.ae
+   CSRF_TRUSTED_ORIGINS=http://103.174.102.124,http://api.helio.ae,https://api.helio.ae
+   FRONTEND_URL=http://api.helio.ae/heliogram
    ```
    The `https://` variants are harmless while still on HTTP — they only
    start matching once you flip to TLS.
@@ -328,10 +328,10 @@ host served it.
 
 5. Smoke-test:
    ```bash
-   curl -sI http://platform.helio.ae/                 | head -1   # 200
-   curl -sI http://platform.helio.ae/heliogram/       | head -1   # 200
-   curl -sI http://platform.helio.ae/admin/login/     | head -1   # 200
-   curl -sI http://platform.helio.ae/api/image/health | head -1   # 200
+   curl -sI http://api.helio.ae/                 | head -1   # 200
+   curl -sI http://api.helio.ae/heliogram/       | head -1   # 200
+   curl -sI http://api.helio.ae/admin/login/     | head -1   # 200
+   curl -sI http://api.helio.ae/api/image/health | head -1   # 200
    ```
 
 ### 6b.2 Same-origin VITE_* — why and when to override
@@ -348,11 +348,11 @@ rebuild `main-app-frontend` (`--build --no-cache`).
 
 **Path A — Cloudflare proxy (fastest, no server changes).**
 1. In the Cloudflare dashboard, click the grey cloud next to the
-   `platform.helio.ae` record until it turns **orange**.
+   `api.helio.ae` record until it turns **orange**.
 2. SSL/TLS → set encryption mode to **Flexible** (browser ↔ CF is
    HTTPS, CF ↔ origin stays HTTP). Upgrade to *Full* later if you add
    a cert on the origin.
-3. Wait ~30s, then visit `https://platform.helio.ae/`. The browser
+3. Wait ~30s, then visit `https://api.helio.ae/`. The browser
    sees a valid certificate; the origin keeps serving plain HTTP.
 4. Once HTTPS works, flip the cookie flags **in `.env.prod`** and
    restart `heliogram-backend`:
@@ -364,7 +364,7 @@ rebuild `main-app-frontend` (`--build --no-cache`).
    HTTPS — non-negotiable for admin security.
 
 **Path B — Let's Encrypt on the origin (currently active).**
-Used for `platform.helio.ae`. Real end-to-end TLS, no CF in the
+Used for `api.helio.ae`. Real end-to-end TLS, no CF in the
 request path. One-time bootstrap (~30 s of HTTP downtime while the
 cert is issued), then fully-automated webroot renewals with zero
 downtime thereafter.
@@ -384,10 +384,10 @@ downtime thereafter.
 3. Issue the cert (standalone):
    ```bash
    certbot certonly --standalone \
-     -d platform.helio.ae \
+     -d api.helio.ae \
      --non-interactive --agree-tos \
      -m admin@helio.ae
-   ls /etc/letsencrypt/live/platform.helio.ae/    # fullchain.pem + privkey.pem
+   ls /etc/letsencrypt/live/api.helio.ae/    # fullchain.pem + privkey.pem
    ```
 
 4. Pull the TLS-aware nginx/compose config and rebuild the edge:
@@ -400,7 +400,7 @@ downtime thereafter.
 
 5. Switch the renewal authenticator from standalone → webroot so
    future renewals don't need to stop nginx (edit
-   `/etc/letsencrypt/renewal/platform.helio.ae.conf`):
+   `/etc/letsencrypt/renewal/api.helio.ae.conf`):
    ```ini
    [renewalparams]
    authenticator = webroot
@@ -425,8 +425,8 @@ downtime thereafter.
 
 6. Flip the cookie flags and URLs in `.env.prod` to reflect HTTPS:
    ```
-   PUBLIC_URL=https://platform.helio.ae
-   FRONTEND_URL=https://platform.helio.ae/heliogram
+   PUBLIC_URL=https://api.helio.ae
+   FRONTEND_URL=https://api.helio.ae/heliogram
    SESSION_COOKIE_SECURE=True
    CSRF_COOKIE_SECURE=True
    ```
@@ -437,11 +437,11 @@ downtime thereafter.
 
 7. Smoke-test:
    ```bash
-   curl -sI https://platform.helio.ae/                 | head -1   # 200
-   curl -sI https://platform.helio.ae/heliogram/       | head -1   # 200
-   curl -sI https://platform.helio.ae/admin/login/     | head -1   # 200
-   curl -sI https://platform.helio.ae/api/image/health | head -1   # 200
-   curl -sI http://platform.helio.ae/                  | head -1   # 301
+   curl -sI https://api.helio.ae/                 | head -1   # 200
+   curl -sI https://api.helio.ae/heliogram/       | head -1   # 200
+   curl -sI https://api.helio.ae/admin/login/     | head -1   # 200
+   curl -sI https://api.helio.ae/api/image/health | head -1   # 200
+   curl -sI http://api.helio.ae/                  | head -1   # 301
    ```
 
 The bare IP (`http://103.174.102.124/*`) keeps serving plain HTTP

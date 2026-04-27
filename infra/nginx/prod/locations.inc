@@ -1,7 +1,7 @@
 # Shared proxy rules for the helio-platform edge.
 #
 # Included from BOTH the port-80 default_server (IP fallback) and the
-# port-443 TLS server (platform.helio.ae) so the routing definition stays
+# port-443 TLS server (api.helio.ae) so the routing definition stays
 # in one place. Do NOT define `listen` / `server_name` / `ssl_*` here —
 # those belong to the individual server blocks in nginx.conf.
 #
