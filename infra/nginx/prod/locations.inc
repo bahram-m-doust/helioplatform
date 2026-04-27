@@ -17,6 +17,7 @@
 #   /v1/video/                  -> video-generator-api  (PUBLIC, X-API-Key)
 #   /v1/storyteller/            -> storyteller-api      (PUBLIC, X-API-Key)
 #   /v1/campaign/               -> campaign-maker-api   (PUBLIC, X-API-Key)
+#   /api/tenant/                -> tenant-api           (Supabase JWT)
 #   /api/                       -> heliogram-backend (catch-all)
 #   /admin/, /static/, /media/  -> heliogram-backend
 #   /.well-known/acme-challenge/-> /var/www/certbot (Let's Encrypt webroot)
@@ -137,6 +138,20 @@ location /v1/campaign/ {
   limit_req zone=helio_external burst=30 nodelay;
   rewrite ^/v1/campaign(/.*)$ /v1$1 break;
   proxy_pass http://campaign_agent;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# ---- tenant-api (Supabase-backed control plane) ----
+# Browser callers send a Supabase JWT; tenant-api validates against JWKS.
+# Strip the /api/tenant prefix so upstream sees the route as it's defined
+# in services/tenant-api/app/routes/* (e.g. /me/brands, /admin/brands).
+location /api/tenant/ {
+  rewrite ^/api/tenant(/.*)$ $1 break;
+  proxy_pass http://tenant_api;
   proxy_http_version 1.1;
   proxy_set_header Host $host;
   proxy_set_header X-Real-IP $remote_addr;

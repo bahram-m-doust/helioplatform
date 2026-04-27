@@ -1,0 +1,9 @@
+# BuildKit per-Dockerfile dockerignore. Keeps the tenant-api build
+# context to packages/agent-common + services/tenant-api only.
+apps/
+agents/
+infra/
+scripts/
+docs/
+node_modules/
+package-lock.json
