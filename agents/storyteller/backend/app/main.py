@@ -30,9 +30,14 @@ def create_app() -> FastAPI:
     application.add_middleware(
         CORSMiddleware,
         allow_origins=EXTERNAL_CONFIG.allowed_origins,
+        # Wildcard subdomains (Framer per-brand sites). Empty regex means
+        # only the exact allowlist applies.
+        allow_origin_regex=EXTERNAL_CONFIG.allowed_origin_regex,
         allow_credentials=False,
         allow_methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["Content-Type", "X-API-Key"],
+        # Authorization is needed for the Supabase JWT path; X-API-Key
+        # for the server-to-server path.
+        allow_headers=["Content-Type", "X-API-Key", "Authorization"],
         max_age=600,
     )
 

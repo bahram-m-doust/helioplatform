@@ -40,6 +40,7 @@ def _parse_keys(raw: str | None) -> dict[str, str]:
 class ExternalConfig:
     api_keys: dict[str, str] = field(default_factory=dict)
     allowed_origins: list[str] = field(default_factory=list)
+    allowed_origin_regex: str | None = None
     rate_limit_per_minute: int = 30
     rate_limit_burst: int = 10
 
@@ -57,6 +58,11 @@ def load_config(
     return ExternalConfig(
         api_keys=_parse_keys(os.getenv(api_keys_env)),
         allowed_origins=_split_csv(os.getenv('HELIO_EXTERNAL_ALLOWED_ORIGINS')),
+        # Wildcard CORS for *.platform.helio.ae (Framer per-brand subdomains).
+        # ``None`` (env-var unset) means no regex matching, only the exact
+        # allowlist above. Empty string also disables — matching nothing
+        # would block legitimate previews silently.
+        allowed_origin_regex=(os.getenv('HELIO_EXTERNAL_ALLOWED_ORIGIN_REGEX') or None),
         rate_limit_per_minute=int(
             os.getenv('HELIO_EXTERNAL_RATE_PER_MINUTE', str(rate_per_minute_default))
         ),

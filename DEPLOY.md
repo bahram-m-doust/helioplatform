@@ -390,6 +390,23 @@ downtime thereafter.
    ls /etc/letsencrypt/live/api.helio.ae/    # fullchain.pem + privkey.pem
    ```
 
+   **Phase 4 onward**: also issue a cert for the admin host. Run the
+   same `certbot certonly` command with `-d admin.helio.ae` once the
+   `admin.helio.ae` DNS A record is in place and pointing at this
+   server. nginx's `admin.helio.ae` server block expects
+   `/etc/letsencrypt/live/admin.helio.ae/fullchain.pem` (separate
+   directory from the api cert).
+   ```bash
+   certbot certonly --webroot -w /var/www/certbot \
+     -d admin.helio.ae \
+     --non-interactive --agree-tos \
+     -m admin@helio.ae
+   ```
+   Use `--webroot` here (not `--standalone`) since by this stage nginx
+   is already serving on :80 and stopping it would interrupt
+   `api.helio.ae` traffic. The webroot path is bind-mounted into the
+   nginx container so cert files appear without a reload.
+
 4. Pull the TLS-aware nginx/compose config and rebuild the edge:
    ```bash
    git pull --ff-only origin main

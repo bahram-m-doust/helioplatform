@@ -35,6 +35,7 @@ x-agent-env: &agent-env
   # operator can rotate (or disable) one agent's external surface without
   # touching the others. Per-agent overrides are set on the service blocks.
   HELIO_EXTERNAL_ALLOWED_ORIGINS: ${HELIO_EXTERNAL_ALLOWED_ORIGINS:-}
+  HELIO_EXTERNAL_ALLOWED_ORIGIN_REGEX: ${HELIO_EXTERNAL_ALLOWED_ORIGIN_REGEX:-}
   HELIO_EXTERNAL_RATE_PER_MINUTE: ${HELIO_EXTERNAL_RATE_PER_MINUTE:-30}
   HELIO_EXTERNAL_RATE_BURST: ${HELIO_EXTERNAL_RATE_BURST:-10}
 
