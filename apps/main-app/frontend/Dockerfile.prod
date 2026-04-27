@@ -1,10 +1,11 @@
 # syntax=docker/dockerfile:1.6
-# Multi-stage production build for the main-app (marketing site + agent SPA).
+# Multi-stage production build for the main-app (questionnaire shell).
 # Build context: repository root (see docker-compose.prod.yml).
 #
-# All VITE_* values are baked into the static bundle at build time. They are
-# declared as ARGs here and re-exported as ENV so Vite's `import.meta.env`
-# picks them up during `vite build`.
+# Phase 5.8 stripped this app to a tiny shell — the marketing pages,
+# brand-city, and agent test surfaces all moved (Framer / admin app).
+# The only build-time env still consumed is VITE_COMMUNITY_URL, which
+# the SiteHeader/SiteFooter use to optionally render a Community link.
 
 # ---------- Stage 1: build the SPA ----------
 FROM node:20-alpine AS build
@@ -15,26 +16,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Public build-time configuration. All values come from docker-compose args.
-ARG VITE_HELIOGRAM_API_BASE_URL
-ARG VITE_IMAGE_AGENT_API_BASE_URL
-ARG VITE_VIDEO_AGENT_API_BASE_URL
-ARG VITE_STORYTELLER_AGENT_API_BASE_URL
-ARG VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL
-ARG VITE_COMMUNITY_URL
-ARG VITE_OPENROUTER_API_KEY=""
-ARG VITE_OPENROUTER_MODEL="openai/gpt-4o"
-ARG VITE_OPENROUTER_FALLBACK_MODELS=""
-
-ENV VITE_HELIOGRAM_API_BASE_URL=$VITE_HELIOGRAM_API_BASE_URL \
-    VITE_IMAGE_AGENT_API_BASE_URL=$VITE_IMAGE_AGENT_API_BASE_URL \
-    VITE_VIDEO_AGENT_API_BASE_URL=$VITE_VIDEO_AGENT_API_BASE_URL \
-    VITE_STORYTELLER_AGENT_API_BASE_URL=$VITE_STORYTELLER_AGENT_API_BASE_URL \
-    VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL=$VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL \
-    VITE_COMMUNITY_URL=$VITE_COMMUNITY_URL \
-    VITE_OPENROUTER_API_KEY=$VITE_OPENROUTER_API_KEY \
-    VITE_OPENROUTER_MODEL=$VITE_OPENROUTER_MODEL \
-    VITE_OPENROUTER_FALLBACK_MODELS=$VITE_OPENROUTER_FALLBACK_MODELS \
+ARG VITE_COMMUNITY_URL=""
+ENV VITE_COMMUNITY_URL=$VITE_COMMUNITY_URL \
     NODE_ENV=production
 
 # Copy only what the build needs (keeps image small, avoids invalidating cache).

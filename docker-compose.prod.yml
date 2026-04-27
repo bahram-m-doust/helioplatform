@@ -144,25 +144,11 @@ services:
     build:
       context: .
       dockerfile: apps/main-app/frontend/Dockerfile.prod
-      # IMPORTANT: Keep these VITE_* defaults as **relative / same-origin**
-      # paths. A production user might reach the app via several URLs:
-      #   * http://103.174.102.124       (bare IP, during DNS propagation)
-      #   * http://api.helio.ae     (canonical domain)
-      #   * https://api.helio.ae    (once TLS is in front)
-      # Baking an absolute URL into the bundle forces cross-origin calls for
-      # two of the three cases. A relative base makes the browser call the
-      # same host that served the bundle — nginx already routes
-      # /api/{image,video,storyteller,campaign,*} to the right upstream.
+      # Phase 5.8 stripped this app to a tiny questionnaire shell. The
+      # only build-time env still needed is VITE_COMMUNITY_URL, used by
+      # the SiteHeader/SiteFooter to optionally link to community.
       args:
-        VITE_HELIOGRAM_API_BASE_URL: ${VITE_HELIOGRAM_API_BASE_URL:-/}
-        VITE_IMAGE_AGENT_API_BASE_URL: ${VITE_IMAGE_AGENT_API_BASE_URL:-/api/image}
-        VITE_VIDEO_AGENT_API_BASE_URL: ${VITE_VIDEO_AGENT_API_BASE_URL:-/api/video}
-        VITE_STORYTELLER_AGENT_API_BASE_URL: ${VITE_STORYTELLER_AGENT_API_BASE_URL:-/api/storyteller}
-        VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL: ${VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL:-/api/campaign}
-        VITE_COMMUNITY_URL: ${VITE_COMMUNITY_URL:-/heliogram}
-        VITE_OPENROUTER_API_KEY: ${VITE_OPENROUTER_API_KEY:-}
-        VITE_OPENROUTER_MODEL: ${VITE_OPENROUTER_MODEL:-openai/gpt-4o}
-        VITE_OPENROUTER_FALLBACK_MODELS: ${VITE_OPENROUTER_FALLBACK_MODELS:-}
+        VITE_COMMUNITY_URL: ${VITE_COMMUNITY_URL:-}
     container_name: helio-prod-main-app
     <<: *default-restart
     expose:
@@ -228,6 +214,39 @@ services:
     expose:
       - "8050"
 
+  soul-print-api:
+    build:
+      context: .
+      dockerfile: agents/soul-print/backend/Dockerfile.prod
+    container_name: helio-prod-soul-print
+    <<: *default-restart
+    environment:
+      <<: *agent-env
+      SERVICE_NAME: soul-print
+      PORT: "8070"
+      SOUL_PRINT_LLM_MODEL: ${SOUL_PRINT_LLM_MODEL:-openai/gpt-4o}
+      SOUL_PRINT_FALLBACK_MODELS: ${SOUL_PRINT_FALLBACK_MODELS:-}
+      HELIO_EXTERNAL_API_KEYS_SOUL_PRINT: ${HELIO_EXTERNAL_API_KEYS_SOUL_PRINT:-}
+    expose:
+      - "8070"
+
+  # ---------------------------------------------------------------- admin SPA
+  # Internal admin UI served at admin.helio.ae. Vite build bakes the
+  # Supabase URL + anon key into the bundle (safe — anon key is public);
+  # the service-role key is NEVER baked in.
+  admin-frontend:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile.prod
+      args:
+        VITE_SUPABASE_URL: ${SUPABASE_URL:-}
+        VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+        VITE_API_BASE_URL: ${ADMIN_API_BASE_URL:-https://api.helio.ae}
+    container_name: helio-prod-admin
+    <<: *default-restart
+    expose:
+      - "80"
+
   # -------------------------------------------------------- tenant-api --
   # Supabase-backed control plane: brand CRUD, member management, API-key
   # issuance, subdomain routing table. Holds the Supabase service-role key
@@ -265,7 +284,9 @@ services:
       - video-generator-api
       - storyteller-api
       - campaign-maker-api
+      - soul-print-api
       - tenant-api
+      - admin-frontend
     ports:
       - "${PUBLIC_HTTP_PORT:-80}:80"
       - "${PUBLIC_HTTPS_PORT:-443}:443"

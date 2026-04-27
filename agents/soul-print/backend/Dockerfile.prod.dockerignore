@@ -1,0 +1,11 @@
+apps/
+infra/
+scripts/
+docs/
+services/
+node_modules/
+package-lock.json
+agents/image-generator/
+agents/video-generator/
+agents/storyteller/
+agents/campaign-maker/

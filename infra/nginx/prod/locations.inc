@@ -96,6 +96,16 @@ location /api/storyteller/ {
   proxy_set_header X-Forwarded-Proto $scheme;
 }
 
+location /api/soul-print/ {
+  rewrite ^/api/soul-print(/.*)$ $1 break;
+  proxy_pass http://soul_print_agent;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}
+
 # ---- Public/external API surface (third-party callers, e.g. Framer) ----
 # Each agent has its own /v1/<slug>/* prefix. nginx applies a per-IP rate
 # limit (defense in depth) and the agent enforces an X-API-Key + per-key
@@ -138,6 +148,17 @@ location /v1/campaign/ {
   limit_req zone=helio_external burst=30 nodelay;
   rewrite ^/v1/campaign(/.*)$ /v1$1 break;
   proxy_pass http://campaign_agent;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location /v1/soul-print/ {
+  limit_req zone=helio_external burst=30 nodelay;
+  rewrite ^/v1/soul-print(/.*)$ /v1$1 break;
+  proxy_pass http://soul_print_agent;
   proxy_http_version 1.1;
   proxy_set_header Host $host;
   proxy_set_header X-Real-IP $remote_addr;
@@ -205,9 +226,13 @@ location = /heliogram {
   return 301 /heliogram/;
 }
 
-# ---- main-app SPA (default) ----
+# ---- Root SPA (per-host) ----
+# ``$root_upstream`` is set by the ``map`` block in nginx.conf:
+#   api.helio.ae / IP fallback -> main_app
+#   admin.helio.ae             -> admin_frontend
+# This keeps a single locations.inc included from every server block.
 location / {
-  proxy_pass http://main_app;
+  proxy_pass http://$root_upstream;
   proxy_http_version 1.1;
   proxy_set_header Host $host;
   proxy_set_header X-Real-IP $remote_addr;

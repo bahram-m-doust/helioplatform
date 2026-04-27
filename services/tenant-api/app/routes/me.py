@@ -10,7 +10,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.config import CONFIG
-from app.schemas import MembershipRead
+from app.schemas import MembershipRead, UsageRow
 from app.security import AuthPrincipal, require_caller
 
 router = APIRouter(prefix='/me', tags=['me'])
@@ -56,3 +56,37 @@ async def list_my_brands(
         for row in rows
         if row.get('brand')
     ]
+
+
+@router.get('/usage', response_model=list[UsageRow])
+async def list_my_usage(
+    request: Request,
+    _principal: AuthPrincipal = Depends(require_caller),
+) -> list[UsageRow]:
+    """Return per-brand cost rollups the caller is allowed to see.
+
+    Reads the ``brand_cost_summary`` view (RLS-aware via
+    security_invoker=true). One row per (brand, agent_kind, month).
+    The admin UI's Usage page renders these directly.
+    """
+    if not CONFIG.supabase_url or not CONFIG.supabase_anon_key:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, 'Supabase not configured.')
+
+    token = _bearer(request)
+    headers = {
+        'apikey': CONFIG.supabase_anon_key,
+        'Authorization': f'Bearer {token}',
+    }
+    async with httpx.AsyncClient(base_url=CONFIG.supabase_url, timeout=10.0) as client:
+        response = await client.get(
+            '/rest/v1/brand_cost_summary',
+            params={
+                'select': 'brand_id,agent_kind,period_start,succeeded_count,failed_count,total_cost_usd,avg_duration_ms,last_run_at',
+                'order': 'period_start.desc,total_cost_usd.desc',
+            },
+            headers=headers,
+        )
+    if response.status_code >= 400:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, 'Supabase query failed.')
+    rows = response.json() or []
+    return [UsageRow(**row) for row in rows]

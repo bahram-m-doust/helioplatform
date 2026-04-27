@@ -117,6 +117,19 @@ class BrandAgentConfig(BaseModel):
     restricted_topics: list[str] = Field(default_factory=list, max_length=32)
 
 
+class UsageRow(BaseModel):
+    """One row of brand_cost_summary, scoped to the caller's RLS view."""
+
+    brand_id: UUID
+    agent_kind: Literal['image', 'video', 'storyteller', 'campaign', 'soul-print']
+    period_start: str
+    succeeded_count: int
+    failed_count: int
+    total_cost_usd: float
+    avg_duration_ms: int
+    last_run_at: str | None = None
+
+
 class HealthResponse(BaseModel):
     status: Literal['ok'] = 'ok'
     service: str
