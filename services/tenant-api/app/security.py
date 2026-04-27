@@ -60,6 +60,22 @@ def _jwks_client() -> PyJWKClient:
     return _JWKS_CLIENT
 
 
+def _expected_issuer() -> str:
+    """The ``iss`` claim Supabase puts on its JWTs.
+
+    Always ``${SUPABASE_URL}/auth/v1``. We derive it from SUPABASE_URL
+    rather than taking it as a separate env var so the operator cannot
+    accidentally desynchronise them.
+    """
+    base = CONFIG.supabase_url.rstrip('/')
+    if not base:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            'SUPABASE_URL not configured.',
+        )
+    return f'{base}/auth/v1'
+
+
 def _verify_jwt(token: str) -> dict[str, Any]:
     try:
         signing_key = _jwks_client().get_signing_key_from_jwt(token).key
@@ -68,10 +84,17 @@ def _verify_jwt(token: str) -> dict[str, Any]:
             signing_key,
             algorithms=['RS256', 'ES256'],
             audience='authenticated',
+            issuer=_expected_issuer(),
             options={'require': ['exp', 'sub', 'iss']},
         )
     except jwt.ExpiredSignatureError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Token expired.')
+    except jwt.InvalidIssuerError:
+        # Defensive — token confusion attack: a token signed by a different
+        # Supabase project (or a different IdP that happens to use our key
+        # algorithm) is rejected here, even if the signature verifies.
+        logger.warning('JWT issuer mismatch.')
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Invalid token issuer.')
     except jwt.InvalidTokenError as exc:
         logger.warning('JWT validation failed: %s', exc)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Invalid token.') from exc
