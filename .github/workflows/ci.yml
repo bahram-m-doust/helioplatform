@@ -1,0 +1,170 @@
+# Helio Platform CI — codifies the Senior Review checklist that we've
+# been running by hand at the end of every phase. Three independent jobs
+# (sql, python, frontend) run in parallel; any failure blocks merge.
+#
+# All jobs are read-only (no secrets, no deploys) — the multi-tenant
+# pivot kept ``SUPABASE_*`` and provider tokens out of CI, so this
+# workflow is safe to run on forks too.
+
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sql:
+    name: SQL migrations parse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static SQL sanity (parens balance + dangling commas)
+        run: |
+          set -eu
+          ok=true
+          for f in infra/supabase/migrations/*.sql infra/supabase/policies/*.sql; do
+            python3 - "$f" <<'PY'
+          import re, sys
+          path = sys.argv[1]
+          with open(path) as fh:
+              sql = fh.read()
+          opens, closes = sql.count('('), sql.count(')')
+          dangling = bool(re.search(r',\s*\)', sql))
+          if opens != closes or dangling:
+              print(f"FAIL {path}: parens={opens}/{closes} dangling={dangling}")
+              sys.exit(1)
+          print(f"  OK  {path}")
+          PY
+          done
+
+      - name: Reject psql meta-commands in migration files
+        # ``\ir`` and friends only work via psql; any tool that runs raw
+        # SQL (Supabase CLI's pg-protocol path, sqlx-cli, libpq) silently
+        # treats them as unknown commands. Migrations must be self-contained.
+        run: |
+          if grep -nE '^\\(ir|i|include) ' infra/supabase/migrations/*.sql; then
+            echo "FAIL: psql meta-command found in a migration. Inline the include."
+            exit 1
+          fi
+
+  python:
+    name: Python — agents + tenant-api boot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install agent_common + test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e packages/agent-common
+          pip install httpx 'PyJWT[crypto]>=2.8' email-validator
+
+      - name: Install tenant-api deps
+        run: pip install -r services/tenant-api/requirements.txt
+
+      - name: Smoke-import every agent + tenant-api
+        run: |
+          set -eu
+          for d in agents/image-generator agents/video-generator agents/storyteller agents/campaign-maker agents/soul-print services/tenant-api; do
+            base="$d"
+            [ -d "$base/backend" ] && base="$base/backend"
+            (cd "$base" && python -c "
+          from fastapi.testclient import TestClient
+          from app.main import app
+          with TestClient(app) as c:
+              status = c.get('/health').status_code
+              assert status == 200, f'{$d!r} /health = {status}'
+              print(f'  $d /health=200 routes={len(app.routes)}')
+          ")
+          done
+
+      - name: Regression matrix on the four /v1 agents (legacy mode)
+        # Phase 3's backwards-compat path: when SUPABASE_URL is unset,
+        # require_tenant falls through to the env-var X-API-Key flow.
+        # Verify each agent gates auth, validates body, and emits the
+        # security headers we promise.
+        run: |
+          set -eu
+          for spec in \
+              "image-generator|HELIO_EXTERNAL_API_KEYS_IMAGE|/v1/generate|{\"user_request\":\"glass tower\",\"brand\":\"Binghatti\"}" \
+              "video-generator|HELIO_EXTERNAL_API_KEYS_VIDEO|/v1/generate|{\"user_request\":\"slow zoom\",\"image_url\":\"https://example.com/x.jpg\",\"brand\":\"Binghatti\",\"duration\":5}" \
+              "storyteller|HELIO_EXTERNAL_API_KEYS_STORYTELLER|/v1/chat|{\"profile\":\"Brand Language\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}" \
+              "campaign-maker|HELIO_EXTERNAL_API_KEYS_CAMPAIGN|/v1/chat|{\"brand\":\"Binghatti\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}"; do
+            agent="${spec%%|*}"; rest="${spec#*|}"
+            kvar="${rest%%|*}"; rest="${rest#*|}"
+            ep="${rest%%|*}"; pay="${rest#*|}"
+            (cd "agents/$agent/backend" && env "$kvar=test:k1" python -c "
+          import json
+          from fastapi.testclient import TestClient
+          from app.main import app
+          with TestClient(app) as c:
+              ep, pay = '$ep', json.loads('''$pay''')
+              assert c.get('/health').status_code == 200
+              assert c.post(ep, json=pay).status_code == 401, 'no-key gate broken'
+              assert c.post(ep, headers={'X-API-Key':'wrong'}, json=pay).status_code == 401, 'wrong-key gate broken'
+              assert c.post(ep, headers={'Authorization':'Bearer x'}, json=pay).status_code == 503, 'JWT path should 503 in legacy mode'
+              r = c.post(ep, headers={'X-API-Key':'k1'}, json=pay)
+              assert r.status_code in (500, 502), f'expected upstream-LLM 5xx, got {r.status_code}'
+              assert r.headers.get('x-content-type-options') == 'nosniff', 'security header missing on error'
+              assert r.headers.get('cache-control') == 'no-store', 'cache header missing'
+              print(f'  $agent: PASS')
+          ")
+          done
+
+  frontend:
+    name: Frontend — TypeScript builds clean
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install + lint root (main-app shell)
+        run: |
+          npm ci
+          npm run lint
+
+      - name: Install + lint admin SPA
+        run: |
+          cd apps/admin
+          npm ci
+          npm run lint
+
+  hygiene:
+    name: Hygiene — secrets + scope checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Service-role key is only in services/tenant-api
+        # Catastrophic if the service-role key ever leaks to an agent or
+        # to the admin SPA bundle. Allow-list is exactly one directory.
+        run: |
+          if grep -rn "SUPABASE_SERVICE_ROLE_KEY" \
+              agents/ packages/ apps/ \
+              --exclude-dir=node_modules --exclude-dir=__pycache__ \
+              2>/dev/null; then
+            echo "FAIL: SUPABASE_SERVICE_ROLE_KEY referenced outside services/tenant-api/"
+            exit 1
+          fi
+
+      - name: Frontend bundle never references VITE_OPENROUTER_*
+        # Phase 5 closed the OpenRouter key leak; CI guarantees it stays closed.
+        run: |
+          if grep -rn "VITE_OPENROUTER" \
+              apps/main-app/ apps/admin/ \
+              --exclude-dir=node_modules \
+              2>/dev/null; then
+            echo "FAIL: VITE_OPENROUTER_* found in a frontend tree."
+            exit 1
+          fi
