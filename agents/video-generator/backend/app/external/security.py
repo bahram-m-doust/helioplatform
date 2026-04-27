@@ -1,17 +1,17 @@
 """Video-generator external API security primitives.
 
-Re-exports the per-agent security bundle built from the shared
-:mod:`agent_common.security`.
+Phase 3: ``require_tenant`` replaces ``require_caller``. Falls back to
+the legacy env-var X-API-Key flow when ``SUPABASE_URL`` is unset.
 """
 
 from __future__ import annotations
 
 from agent_common.security import build_security
+from agent_common.tenant import build_tenant_resolver
 
 from app.external.config import CONFIG
 
 _BUNDLE = build_security(CONFIG)
-
-api_key_principal = _BUNDLE.api_key_principal
-require_caller = _BUNDLE.require_caller
 ExternalSecurityHeadersMiddleware = _BUNDLE.middleware
+
+require_tenant = build_tenant_resolver(config=CONFIG)
