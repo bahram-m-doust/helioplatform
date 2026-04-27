@@ -12,7 +12,15 @@ from app.external.config import CONFIG as EXTERNAL_CONFIG
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    yield
+    """Process-wide resource lifecycle. Today: close the cached httpx
+    clients used by ``agent_common.tenant.supabase_client`` on shutdown
+    so SIGTERM doesn't leak open sockets.
+    """
+    from agent_common.tenant.supabase_client import aclose_all
+    try:
+        yield
+    finally:
+        await aclose_all()
 
 
 def create_app() -> FastAPI:

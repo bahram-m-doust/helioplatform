@@ -79,6 +79,44 @@ class SubdomainCreate(BaseModel):
         return normalized
 
 
+class FramerInviteRequest(BaseModel):
+    """Body for POST /admin/framer/invite — admin-driven Supabase invite."""
+
+    email: EmailStr
+    brand_code: str = Field(..., min_length=2, max_length=32, examples=['binghatti'])
+    role: Literal['owner', 'editor', 'viewer'] = 'editor'
+
+    @field_validator('brand_code')
+    @classmethod
+    def _validate_brand_code(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not _SLUG_RE.match(normalized):
+            raise ValueError('brand_code must be a valid slug (a-z, 0-9, hyphen).')
+        return normalized
+
+
+class FramerInviteResponse(BaseModel):
+    """Action link returned by Supabase Auth admin invite. Forward to Framer."""
+
+    user_id: UUID
+    email: EmailStr
+    brand_id: UUID
+    invite_url: str | None = Field(
+        default=None,
+        description='Magic link the invitee opens. None if Supabase emailed it directly.',
+    )
+
+
+class BrandAgentConfig(BaseModel):
+    """Typed shape of brand_agents.config_json. Mirrors the SQL CHECK in 0007."""
+
+    system_prompt_override: str | None = None
+    tone: str | None = Field(default=None, max_length=64)
+    language: str | None = Field(default=None, max_length=16)
+    persona: str | None = Field(default=None, max_length=64)
+    restricted_topics: list[str] = Field(default_factory=list, max_length=32)
+
+
 class HealthResponse(BaseModel):
     status: Literal['ok'] = 'ok'
     service: str

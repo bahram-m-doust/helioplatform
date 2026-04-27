@@ -134,6 +134,7 @@ def require_admin(principal: AuthPrincipal = Depends(require_caller)) -> AuthPri
 # httpx client with the service-role key — used to call Supabase REST
 # endpoints with RLS bypass. ``httpx.AsyncClient`` is async-safe and
 # reuses connections, so a single instance for the process is correct.
+# Lifecycle is managed by app/main.py's lifespan hook (see ``aclose``).
 _admin_http: httpx.AsyncClient | None = None
 
 
@@ -162,3 +163,11 @@ def supabase_admin_client() -> httpx.AsyncClient:
             timeout=httpx.Timeout(10.0),
         )
     return _admin_http
+
+
+async def close_supabase_admin_client() -> None:
+    """Close the service-role httpx client. Called from the lifespan hook."""
+    global _admin_http
+    if _admin_http is not None:
+        await _admin_http.aclose()
+        _admin_http = None

@@ -74,6 +74,8 @@ def jwt_client() -> httpx.AsyncClient:
     """Singleton client for JWT-authenticated PostgREST calls.
 
     The Authorization header is added per-call (different per user).
+    Lifecycle is managed by the agent's app/main.py lifespan hook, which
+    must call :func:`aclose_all` on shutdown.
     """
     global _jwt_client
     if _jwt_client is None:
@@ -87,3 +89,19 @@ def anon_client() -> httpx.AsyncClient:
     if _anon_client is None:
         _anon_client = _build_anon_client()
     return _anon_client
+
+
+async def aclose_all() -> None:
+    """Close every cached httpx client.
+
+    Called from each agent's app/main.py lifespan hook on shutdown so
+    the process exits cleanly under SIGTERM and tests don't leak open
+    sockets / asyncio warnings.
+    """
+    global _jwt_client, _anon_client
+    if _jwt_client is not None:
+        await _jwt_client.aclose()
+        _jwt_client = None
+    if _anon_client is not None:
+        await _anon_client.aclose()
+        _anon_client = None
