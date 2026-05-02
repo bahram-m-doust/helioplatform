@@ -1,6 +1,6 @@
 import React from 'react';
-import headerLogo from '../../assets/helio-logo-header.png';
-import footerLogo from '../../assets/helio-logo-footer.png';
+import footerLogoSrc from '../../assets/logo-footer.png';
+import headerLogoSrc from '../../assets/logo.header.png';
 
 interface BrandLogoProps {
   className?: string;
@@ -10,14 +10,21 @@ interface BrandLogoProps {
 
 export function BrandLogo({
   className = '',
-  imageClassName = 'h-10 w-auto sm:h-12',
+  imageClassName = '',
   variant = 'header',
 }: BrandLogoProps) {
-  const logoSrc = variant === 'footer' ? footerLogo : headerLogo;
+  const logoSrc = variant === 'footer' ? footerLogoSrc : headerLogoSrc;
+  const sizeClass = variant === 'footer' ? 'h-[47px] w-[133px]' : 'h-[56px] w-[160px]';
 
   return (
     <div className={className}>
-      <img src={logoSrc} alt="Helio" className={`block object-contain ${imageClassName}`.trim()} />
+      <img
+        src={logoSrc}
+        alt="Bextudio"
+        className={`block select-none object-contain ${sizeClass} ${imageClassName}`.trim()}
+        loading="lazy"
+        decoding="async"
+      />
     </div>
   );
 }

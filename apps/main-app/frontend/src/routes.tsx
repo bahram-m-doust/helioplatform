@@ -30,6 +30,7 @@ export function AppRoutes() {
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/community" element={<CommunityPage />} />
         <Route path="/brand-city" element={<BrandCityPage />} />
+        <Route path="/dashboard" element={<QuestionnairePage />} />
         <Route path="/questionnaire" element={<QuestionnairePage />} />
         <Route path="/questionnaire/:sectionSlug" element={<QuestionnaireSectionPage />} />
         <Route path="/agent-store" element={<AgentStorePage />} />

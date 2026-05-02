@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/authStore'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { WordmarkLogo } from '@/components/ui/WordmarkLogo'
 
 interface LoginFormProps {
   onSwitchToRegister: () => void
@@ -32,38 +33,36 @@ export function LoginForm({ onSwitchToRegister, onSwitchToForgot }: LoginFormPro
   }
 
   return (
-    <div className="w-full max-w-sm ind-panel-raised p-6" style={{ borderRadius: '12px' }}>
+    <div className="w-full max-w-sm ind-panel-raised p-7" style={{ borderRadius: '14px' }}>
       {/* Logo area */}
-      <div className="flex flex-col items-center mb-6">
-        <img
-          src={`${import.meta.env.BASE_URL}heliogram-logo.png`}
-          alt="HelioGram"
-          className="h-12 w-auto object-contain mb-3"
-          loading="eager"
-          decoding="async"
-        />
-        <h1 className="text-xl font-bold tracking-wide" style={{ color: 'var(--color-text-primary)' }}>{t('auth.login')}</h1>
+      <div className="flex flex-col items-center mb-8">
+        <WordmarkLogo size="lg" />
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight" style={{ color: 'var(--color-text-primary)' }}>{t('auth.login')}</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          label={t('auth.username')}
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoFocus
-        />
-        <Input
-          label={t('auth.password')}
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-5">
+          <Input
+            label={t('auth.username')}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="h-11"
+            autoFocus
+          />
+          <Input
+            label={t('auth.password')}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="h-11"
+          />
+        </div>
         {error && <p className="text-sm text-error">{error}</p>}
-        <Button variant="primary" type="submit" className="w-full" disabled={loading}>
+        <Button variant="primary" type="submit" className="w-full h-11 mt-1" disabled={loading}>
           {loading ? t('common.loading') : t('auth.login')}
         </Button>
       </form>
-      <div className="mt-4 text-center space-y-2">
+      <div className="mt-7 text-center space-y-2.5">
         <button onClick={onSwitchToForgot} className="text-xs hover:underline" style={{ color: 'var(--color-accent-strong)' }}>
           {t('auth.forgotPassword')}
         </button>

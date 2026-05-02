@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CheckCircle2, Save } from 'lucide-react';
 import { SiteHeader } from '../../shared/layout/SiteHeader';
@@ -168,7 +168,7 @@ export default function QuestionnaireSectionPage() {
                 {saveState === 'saving' && (
                   <>
                     <Save className="size-4 animate-pulse text-neutral-400" />
-                    <span>Saving…</span>
+                    <span>Savingâ€¦</span>
                   </>
                 )}
                 {saveState === 'saved' && (
@@ -236,7 +236,7 @@ export default function QuestionnaireSectionPage() {
                       onBlur={handleBlur}
                       placeholder={question.guide}
                       rows={4}
-                      className="w-full resize-y bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400/70 placeholder:italic focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/30 focus:bg-white transition-all leading-relaxed"
+                      className="w-full resize-y bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400/70 placeholder:italic focus:outline-none focus:border-yellow-300 focus:ring-2 focus:ring-yellow-200/60 focus:bg-white transition-all leading-relaxed"
                     />
                   </div>
                 );

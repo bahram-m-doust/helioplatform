@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/authStore'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { WordmarkLogo } from '@/components/ui/WordmarkLogo'
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void
@@ -37,13 +38,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
   return (
     <div className="w-full max-w-sm ind-panel-raised p-6" style={{ borderRadius: '12px' }}>
       <div className="flex flex-col items-center mb-6">
-        <img
-          src={`${import.meta.env.BASE_URL}heliogram-logo.png`}
-          alt="HelioGram"
-          className="h-12 w-auto object-contain mb-3"
-          loading="eager"
-          decoding="async"
-        />
+        <WordmarkLogo size="lg" />
         <h1 className="text-xl font-bold tracking-wide" style={{ color: 'var(--color-text-primary)' }}>{t('auth.register')}</h1>
       </div>
 

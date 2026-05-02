@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { Bot, Download, Send, Shield, User, Video } from 'lucide-react';
 import { SiteHeader } from '../../../shared/layout/SiteHeader';
 import { SiteFooter } from '../../../shared/layout/SiteFooter';
@@ -287,7 +287,7 @@ export default function VideoGeneratorPage() {
       if (error instanceof Error && error.name === 'AbortError') {
         errorMessage = 'Generation timed out. Please try again.';
       } else if (error instanceof TypeError) {
-        errorMessage = `Video generation service is not reachable (${VIDEO_GENERATION_API_URL}). Check HelioGram backend and CORS settings.`;
+        errorMessage = `Video generation service is not reachable (${VIDEO_GENERATION_API_URL}). Check Community backend and CORS settings.`;
       } else if (error instanceof Error && error.message) {
         errorMessage = error.message;
       }
@@ -437,7 +437,7 @@ export default function VideoGeneratorPage() {
                         }
                       }}
                       rows={1}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl pl-4 pr-12 py-3.5 text-sm text-neutral-900 focus:outline-none focus:border-yellow-400 focus:ring-0 transition-all resize-none max-h-32"
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl pl-4 pr-12 py-3.5 text-sm text-neutral-900 focus:outline-none focus:border-yellow-300 focus:ring-0 transition-all resize-none max-h-32"
                       placeholder="Describe the video you want..."
                       style={{ minHeight: '52px' }}
                     />

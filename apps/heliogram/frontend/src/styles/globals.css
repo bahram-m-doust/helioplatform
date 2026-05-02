@@ -1,60 +1,60 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  /* ── Light Theme: Brushed Aluminum ── */
+  /* â”€â”€ Light Theme: Brushed Aluminum â”€â”€ */
   :root {
-    --color-surface: #c8c8cc;
-    --color-surface-raised: #d6d6da;
-    --color-surface-inset: #b0b0b6;
-    --color-surface-plate: #bfc0c5;
-    --color-border: #a0a0a8;
-    --color-border-light: #b8b8bf;
-    --color-border-groove: #8e8e96;
-    --color-text-primary: #1a1a1f;
-    --color-text-secondary: #4a4a52;
-    --color-text-muted: #6e6e78;
-    --color-accent: #FBB417;
-    --color-accent-strong: #c18300;
-    --color-accent-ink: #2f2000;
-    --color-accent-glow: rgba(251, 180, 23, 0.32);
-    --color-accent-soft: #fce7b6;
+    --color-surface: #FBFBF9;
+    --color-surface-raised: #F7F7F4;
+    --color-surface-inset: #F1F1EC;
+    --color-surface-plate: #EDEDE7;
+    --color-border: #E6E6E6;
+    --color-border-light: #EEEEE8;
+    --color-border-groove: #D9D8D0;
+    --color-text-primary: #26251F;
+    --color-text-secondary: #5B5A52;
+    --color-text-muted: #7A796F;
+    --color-accent: #22CCEE;
+    --color-accent-strong: #1CA9C5;
+    --color-accent-ink: #083F4B;
+    --color-accent-glow: rgba(34, 204, 238, 0.18);
+    --color-accent-soft: #DFF6FB;
     --color-led-online: #00E676;
     --color-led-idle: #FFD740;
     --color-led-dnd: #FF5252;
-    --color-led-off: #7a7a82;
-    --color-metal-highlight: rgba(255, 255, 255, 0.45);
-    --color-metal-shadow: rgba(0, 0, 0, 0.22);
-    --color-bg-white: #d2d2d6;
-    --color-bg-black-20: rgba(0, 0, 0, 0.2);
+    --color-led-off: #7A7A82;
+    --color-metal-highlight: rgba(255, 255, 255, 0.62);
+    --color-metal-shadow: rgba(17, 24, 39, 0.14);
+    --color-bg-white: #FBFBF9;
+    --color-bg-black-20: rgba(17, 24, 39, 0.08);
   }
 
-  /* ── Dark Theme: Gunmetal Steel ── */
+  /* Dark Theme */
   [data-theme='dark'] {
-    --color-surface: #2a2a30;
-    --color-surface-raised: #353540;
-    --color-surface-inset: #1e1e24;
-    --color-surface-plate: #30303a;
-    --color-border: #404048;
-    --color-border-light: #48484f;
-    --color-border-groove: #1a1a20;
-    --color-text-primary: #e0e0e4;
-    --color-text-secondary: #9a9aa2;
-    --color-text-muted: #6a6a74;
-    --color-accent: #FBB417;
-    --color-accent-strong: #f7c24d;
-    --color-accent-ink: #2f2000;
-    --color-accent-glow: rgba(251, 180, 23, 0.4);
-    --color-accent-soft: #4c3608;
+    --color-surface: #1E232E;
+    --color-surface-raised: #252C39;
+    --color-surface-inset: #171C26;
+    --color-surface-plate: #212936;
+    --color-border: #334155;
+    --color-border-light: #3B4A61;
+    --color-border-groove: #111827;
+    --color-text-primary: #E5E7EB;
+    --color-text-secondary: #B8C0CC;
+    --color-text-muted: #8B96A8;
+    --color-accent: #22CCEE;
+    --color-accent-strong: #6FDBF2;
+    --color-accent-ink: #052A32;
+    --color-accent-glow: rgba(34, 204, 238, 0.28);
+    --color-accent-soft: #103847;
     --color-led-online: #69F0AE;
     --color-led-idle: #FFE57F;
     --color-led-dnd: #FF8A80;
-    --color-led-off: #44444c;
-    --color-metal-highlight: rgba(255, 255, 255, 0.08);
-    --color-metal-shadow: rgba(0, 0, 0, 0.5);
-    --color-bg-white: #2e2e34;
-    --color-bg-black-20: rgba(0, 0, 0, 0.5);
+    --color-led-off: #44444C;
+    --color-metal-highlight: rgba(255, 255, 255, 0.06);
+    --color-metal-shadow: rgba(0, 0, 0, 0.45);
+    --color-bg-white: #1E232E;
+    --color-bg-black-20: rgba(0, 0, 0, 0.46);
   }
 
   html {
@@ -71,7 +71,7 @@
     color: var(--color-text-primary);
   }
 
-  /* ── Scrollbar ── */
+  /* â”€â”€ Scrollbar â”€â”€ */
   * {
     scrollbar-width: thin;
     scrollbar-color: var(--color-border) transparent;
@@ -92,11 +92,11 @@
 }
 
 @layer components {
-  /* ══════════════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      INDUSTRIAL DESIGN SYSTEM
-     ══════════════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-  /* ── Raised Metallic Panel ── */
+  /* â”€â”€ Raised Metallic Panel â”€â”€ */
   .ind-panel {
     border: 1px solid var(--color-border);
     border-radius: 6px;
@@ -110,7 +110,7 @@
     );
   }
 
-  /* ── Raised Panel (white variant) ── */
+  /* â”€â”€ Raised Panel (white variant) â”€â”€ */
   .ind-panel-raised {
     border: 1px solid var(--color-border-light);
     border-radius: 8px;
@@ -124,7 +124,7 @@
     );
   }
 
-  /* ── Recessed Area ── */
+  /* â”€â”€ Recessed Area â”€â”€ */
   .ind-recess {
     background: var(--color-surface-inset);
     border: 1px solid var(--color-border-groove);
@@ -132,7 +132,7 @@
     box-shadow: inset 0 2px 4px var(--color-metal-shadow);
   }
 
-  /* ── Embossed Metallic Button ── */
+  /* â”€â”€ Embossed Metallic Button â”€â”€ */
   .ind-button {
     @apply px-4 py-2 font-medium text-sm transition-all duration-100 cursor-pointer;
     background: linear-gradient(
@@ -168,7 +168,7 @@
     box-shadow: inset 0 2px 4px var(--color-metal-shadow);
   }
 
-  /* ── Primary Button (Cyan LED Glow) ── */
+  /* â”€â”€ Primary Button (Cyan LED Glow) â”€â”€ */
   .ind-button-primary {
     @apply px-4 py-2 font-medium text-sm transition-all duration-100 cursor-pointer;
     background: linear-gradient(
@@ -203,7 +203,7 @@
       0 0 6px var(--color-accent-glow);
   }
 
-  /* ── Inset Input Field ── */
+  /* â”€â”€ Inset Input Field â”€â”€ */
   .ind-input {
     @apply w-full px-3 py-2 text-sm transition-all duration-150;
     background: var(--color-surface-inset);
@@ -219,13 +219,13 @@
 
   .ind-input:focus {
     outline: none;
-    border-color: var(--color-accent);
+    border-color: color-mix(in srgb, var(--color-accent) 58%, white);
     box-shadow:
       inset 0 2px 4px var(--color-metal-shadow),
       0 0 0 2px var(--color-accent-glow);
   }
 
-  /* ── LED Indicator Dot ── */
+  /* â”€â”€ LED Indicator Dot â”€â”€ */
   .ind-led {
     width: 8px;
     height: 8px;
@@ -242,7 +242,7 @@
     box-shadow: none;
   }
 
-  /* ── LED Pulse Animation ── */
+  /* â”€â”€ LED Pulse Animation â”€â”€ */
   @keyframes led-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
@@ -252,7 +252,7 @@
     animation: led-pulse 2s ease-in-out infinite;
   }
 
-  /* ── Groove Divider ── */
+  /* â”€â”€ Groove Divider â”€â”€ */
   .ind-groove {
     height: 2px;
     background: linear-gradient(
@@ -263,14 +263,14 @@
     border: none;
   }
 
-  /* ── Section Label (Industrial Engraved Text) ── */
+  /* â”€â”€ Section Label (Industrial Engraved Text) â”€â”€ */
   .ind-label {
     @apply text-[11px] font-semibold uppercase tracking-widest;
     color: var(--color-text-muted);
     text-shadow: 0 1px 0 var(--color-metal-highlight);
   }
 
-  /* ── Metallic Toggle Switch ── */
+  /* â”€â”€ Metallic Toggle Switch â”€â”€ */
   .ind-toggle {
     @apply relative inline-flex items-center cursor-pointer;
     width: 36px;
@@ -301,7 +301,7 @@
   }
 
   .ind-toggle.active {
-    border-color: var(--color-accent);
+    border-color: color-mix(in srgb, var(--color-accent) 58%, white);
     box-shadow:
       inset 0 2px 4px var(--color-metal-shadow),
       0 0 6px var(--color-accent-glow);
@@ -317,7 +317,7 @@
     border-color: color-mix(in srgb, var(--color-accent) 60%, black);
   }
 
-  /* ── Metallic Scrollbar Track ── */
+  /* â”€â”€ Metallic Scrollbar Track â”€â”€ */
   .ind-scrollbar::-webkit-scrollbar-thumb {
     background: linear-gradient(
       90deg,
@@ -328,7 +328,7 @@
     border-radius: 3px;
   }
 
-  /* ── Backward-compat aliases (will be removed) ── */
+  /* â”€â”€ Backward-compat aliases (will be removed) â”€â”€ */
   .skeu-panel { @apply ind-panel; }
   .skeu-panel-raised { @apply ind-panel-raised; }
   .skeu-inset { @apply ind-recess; }
@@ -346,3 +346,4 @@
   .shadow-skeu-inset { box-shadow: inset 0 2px 4px var(--color-metal-shadow); }
   .shadow-skeu-embossed { box-shadow: inset 0 -1px 0 var(--color-metal-shadow), inset 0 1px 0 var(--color-metal-highlight), 0 2px 3px var(--color-metal-shadow); }
 }
+

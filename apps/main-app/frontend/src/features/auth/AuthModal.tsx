@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
 interface AuthModalProps {
@@ -36,29 +36,29 @@ export function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) {
           </button>
         </div>
         <div className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Username</label>
+              <label className="mb-2 block text-sm font-medium text-neutral-700">Username</label>
               <input 
                 type="text" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-neutral-50 border border-neutral-200 rounded-md px-4 py-2.5 text-sm text-neutral-900 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-all"
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-md px-4 py-2.5 text-sm text-neutral-900 focus:outline-none focus:border-yellow-200 focus:ring-1 focus:ring-yellow-200/60 transition-all"
                 placeholder="Enter username"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Password</label>
+              <label className="mb-2 block text-sm font-medium text-neutral-700">Password</label>
               <input 
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-neutral-50 border border-neutral-200 rounded-md px-4 py-2.5 text-sm text-neutral-900 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-all"
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-md px-4 py-2.5 text-sm text-neutral-900 focus:outline-none focus:border-yellow-200 focus:ring-1 focus:ring-yellow-200/60 transition-all"
                 placeholder="Enter password"
               />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button type="submit" className="w-full bg-yellow-400 hover:bg-yellow-500 text-neutral-900 px-6 py-2.5 rounded-md text-sm font-semibold transition-colors mt-4">
+            <button type="submit" className="mt-2 w-full rounded-md bg-yellow-400 px-6 py-2.5 text-sm font-semibold text-neutral-900 transition-colors hover:bg-yellow-500">
               Log in
             </button>
           </form>

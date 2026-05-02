@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { SiteHeader } from '../../shared/layout/SiteHeader';
@@ -6,96 +6,97 @@ import { SiteFooter } from '../../shared/layout/SiteFooter';
 import { useAuth } from '../auth/AuthContext';
 
 const BRAND_CITY_VIDEO_URL =
-  'https://vxjzzhvjuzeeskgzzqmx.supabase.co/storage/v1/object/sign/Helio%20Platform/Motion-1.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9kOWE4ZWYwOS0wZDA4LTRjZTktOGJlNi1mNjNlM2I2NTgyOTgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJIZWxpbyBQbGF0Zm9ybS9Nb3Rpb24tMS5tcDQiLCJpYXQiOjE3NzY3NTM4MzksImV4cCI6MTgwODI4OTgzOX0.TlojwRN6NV_An5wlpTh6Ux5EimLR1twcFB4Z0UmOmXk';
+  'https://vxjzzhvjuzeeskgzzqmx.supabase.co/storage/v1/object/sign/Helio%20Platform/Brand%20City.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9kOWE4ZWYwOS0wZDA4LTRjZTktOGJlNi1mNjNlM2I2NTgyOTgiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJIZWxpbyBQbGF0Zm9ybS9CcmFuZCBDaXR5Lm1wNCIsImlhdCI6MTc3NzI5MTY4MywiZXhwIjoxODA4ODI3NjgzfQ.SSSo0XVKOhfw8FKUJBaA2wdvt0wNIEk124rG2DjSdzE';
 
 export default function BrandCityPage() {
   const { isAuthenticated, openAuthModal } = useAuth();
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isVideoEnded, setIsVideoEnded] = useState(false);
+  const [isIntroVisible, setIsIntroVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setIsIntroVisible(false);
+    }, 7500);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   const handleVideoEnded = () => {
     setIsVideoEnded(true);
   };
 
   const handleStart = () => {
-    navigate('/questionnaire');
+    navigate('/dashboard');
   };
 
   return (
     <div className="min-h-screen bg-white font-sans selection:bg-yellow-400 selection:text-neutral-900">
       <SiteHeader isAuthenticated={isAuthenticated} onLoginClick={openAuthModal} />
 
-      <main>
-        <section className="relative overflow-hidden bg-white pt-16 pb-10 sm:pt-20 sm:pb-14">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="mx-auto max-w-3xl text-center">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
-                <span className="text-sm font-medium text-neutral-700">Brand City</span>
+      <main className="px-4 pb-6 pt-4 md:px-6">
+        <section className="mx-auto w-full max-w-[1540px] overflow-hidden bg-[#f2f2f2]">
+          <div className="relative min-h-[620px] h-[calc(100vh-150px)]">
+            <video
+              ref={videoRef}
+              src={BRAND_CITY_VIDEO_URL}
+              className="absolute inset-0 h-full w-full object-cover object-center"
+              autoPlay
+              muted
+              playsInline
+              preload="auto"
+              onEnded={handleVideoEnded}
+            >
+              Your browser does not support the video tag.
+            </video>
+
+            <div className="absolute inset-0 bg-gradient-to-r from-white/42 via-white/22 to-transparent" />
+
+            <div
+              className={`absolute left-6 top-8 max-w-[700px] transition-opacity duration-700 md:left-20 md:top-10 lg:left-32 ${
+                isIntroVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              <div className="mb-4 flex items-center gap-3">
+                <span className="h-[2px] w-14 rounded-full bg-[#22ccee]" />
+                <span className="text-[28px] font-medium tracking-[-0.01em] text-[#22ccee] md:text-[44px]">Brand City</span>
               </div>
-              <h1 className="mb-6 text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl lg:text-6xl">
-                Step Into Your <span className="text-yellow-400">Brand City</span>
+
+              <h1 className="mb-4 text-[56px] font-normal leading-[0.95] tracking-[-0.03em] text-black md:text-[72px] lg:text-[78px]">
+                Step Into Your
+                <br />
+                Brand City
               </h1>
-              <p className="text-lg text-neutral-600 sm:text-xl">
-                Discover how Helio transforms your brand into a living, breathing city — every district, landmark and street aligned with your identity.
+
+              <p className="max-w-[620px] text-[20px] leading-[1.45] text-black/75 md:text-[21px]">
+                Discover how Bextudio transforms your brand into a living, breathing city - every district, landmark and street aligned with your identity.
               </p>
             </div>
-          </div>
-          <div className="absolute left-1/2 top-0 -z-10 -translate-x-1/2 blur-3xl pointer-events-none" aria-hidden="true">
-            <div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-yellow-100 to-yellow-50 opacity-30"></div>
-          </div>
-        </section>
 
-        <section className="px-6 lg:px-8 max-w-5xl mx-auto pb-20 sm:pb-28">
-          {/* Glassmorphism frame */}
-          <div className="relative rounded-[2rem] p-3 sm:p-4 shadow-2xl
-                          bg-gradient-to-br from-white/70 via-white/20 to-neutral-900/40
-                          backdrop-blur-xl
-                          ring-1 ring-white/40
-                          before:pointer-events-none before:absolute before:inset-0 before:rounded-[2rem]
-                          before:bg-gradient-to-br before:from-white/40 before:via-transparent before:to-transparent
-                          before:opacity-60 before:mix-blend-overlay
-                          after:pointer-events-none after:absolute after:inset-0 after:rounded-[2rem]
-                          after:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6),inset_0_-1px_0_0_rgba(0,0,0,0.25)]">
-            <div className="relative rounded-[1.4rem] overflow-hidden bg-neutral-900 aspect-video ring-1 ring-white/20">
-              <video
-                ref={videoRef}
-                src={BRAND_CITY_VIDEO_URL}
-                className="w-full h-full object-cover"
-                autoPlay
-                muted
-                playsInline
-                preload="auto"
-                onEnded={handleVideoEnded}
-              >
-                Your browser does not support the video tag.
-              </video>
-
-              <div
-                className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ${
-                  isVideoEnded
-                    ? 'bg-neutral-900/60 backdrop-blur-sm opacity-100 pointer-events-auto'
-                    : 'opacity-0 pointer-events-none'
+            <div
+              className={`absolute inset-0 z-20 flex items-center justify-center transition-all duration-500 ${
+                isVideoEnded ? 'bg-neutral-900/60 backdrop-blur-sm opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={handleStart}
+                className={`group inline-flex items-center gap-3 rounded-full bg-yellow-400 px-8 py-4 text-lg font-semibold text-neutral-900 shadow-2xl transition-all hover:bg-yellow-500 ${
+                  isVideoEnded ? 'translate-y-0 scale-100' : 'translate-y-4 scale-95'
                 }`}
               >
-                <button
-                  type="button"
-                  onClick={handleStart}
-                  className={`group inline-flex items-center gap-3 rounded-full bg-yellow-400 hover:bg-yellow-500 text-neutral-900 px-8 py-4 text-lg font-semibold shadow-2xl transition-all ${
-                    isVideoEnded ? 'translate-y-0 scale-100' : 'translate-y-4 scale-95'
-                  }`}
-                >
-                  Let's Start
-                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                </button>
-              </div>
+                Let's Start
+                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </button>
             </div>
           </div>
         </section>
       </main>
 
-      <SiteFooter />
+      <SiteFooter className="mt-0" />
     </div>
   );
 }

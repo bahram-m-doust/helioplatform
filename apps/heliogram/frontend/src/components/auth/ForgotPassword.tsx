@@ -4,6 +4,7 @@ import { authApi } from '@/api/auth'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { WordmarkLogo } from '@/components/ui/WordmarkLogo'
 
 interface ForgotPasswordProps {
   onBack: () => void
@@ -29,13 +30,7 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
   return (
     <Card className="w-full max-w-sm p-6">
       <div className="flex flex-col items-center mb-6">
-        <img
-          src={`${import.meta.env.BASE_URL}heliogram-logo.png`}
-          alt="HelioGram"
-          className="h-12 w-auto object-contain mb-3"
-          loading="eager"
-          decoding="async"
-        />
+        <WordmarkLogo size="lg" />
         <h1 className="text-xl font-bold text-center text-gray-800">{t('auth.forgotPassword')}</h1>
       </div>
       {sent ? (

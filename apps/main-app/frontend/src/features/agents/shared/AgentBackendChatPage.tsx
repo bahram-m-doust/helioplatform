@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { Bot, Download, Send, Shield, User } from 'lucide-react';
 import { SiteHeader } from '../../../shared/layout/SiteHeader';
 import { SiteFooter } from '../../../shared/layout/SiteFooter';
@@ -286,7 +286,7 @@ export function AgentBackendChatPage({
                         }
                       }}
                       rows={1}
-                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl pl-4 pr-12 py-3.5 text-sm text-neutral-900 focus:outline-none focus:border-yellow-400 focus:ring-0 transition-all resize-none max-h-32"
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl pl-4 pr-12 py-3.5 text-sm text-neutral-900 focus:outline-none focus:border-yellow-300 focus:ring-0 transition-all resize-none max-h-32"
                       placeholder="Type your message..."
                       style={{ minHeight: '52px' }}
                     />

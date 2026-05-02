@@ -7,7 +7,7 @@
 #
 # Routing map (public URL -> upstream):
 #   /                           -> main-app-frontend
-#   /heliogram/                 -> heliogram-frontend
+#   /community/                 -> heliogram-frontend
 #   /api/realtime/events/       -> heliogram-backend (SSE, buffering OFF)
 #   /api/image/                 -> image-generator-api  (rewritten to /api/)
 #   /api/video/                 -> video-generator-api  (rewritten to /api/)
@@ -124,17 +124,25 @@ location /media/ {
   proxy_set_header Host $host;
 }
 
-# ---- HelioGram community SPA (served under /heliogram) ----
-location /heliogram/ {
-  proxy_pass http://heliogram_frontend/heliogram/;
+# ---- Community SPA (canonical path: /community) ----
+location /community/ {
+  proxy_pass http://heliogram_frontend/community/;
   proxy_http_version 1.1;
   proxy_set_header Host $host;
   proxy_set_header X-Real-IP $remote_addr;
   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
   proxy_set_header X-Forwarded-Proto $scheme;
 }
+location = /community {
+  return 301 /community/;
+}
+
+# Legacy compatibility: /heliogram/* -> /community/*
+location ~ ^/heliogram/(.*)$ {
+  return 301 /community/$1$is_args$args;
+}
 location = /heliogram {
-  return 301 /heliogram/;
+  return 301 /community/$is_args$args;
 }
 
 # ---- main-app SPA (default) ----

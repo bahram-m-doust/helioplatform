@@ -3,6 +3,7 @@ import { useUIStore } from '@/stores/uiStore'
 import { useDMStore } from '@/stores/dmStore'
 import { ChatView } from '@/components/chat/ChatView'
 import { DMChatView } from '@/components/dm/DMChatView'
+import { WordmarkLogo } from '@/components/ui/WordmarkLogo'
 
 export function MainPanel() {
   const { currentChannel, currentWorkspace } = useWorkspaceStore()
@@ -28,14 +29,16 @@ export function MainPanel() {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="w-44 h-16 mx-auto ind-recess flex items-center justify-center px-3">
-            <img
-              src={`${import.meta.env.BASE_URL}heliogram-logo.png`}
-              alt="HelioGram"
-              className="max-h-10 w-auto object-contain"
-            />
+          <div
+            className="mx-auto inline-flex h-16 min-w-[220px] items-center justify-center rounded-lg border px-6 shadow-sm"
+            style={{
+              borderColor: 'var(--color-border-light)',
+              backgroundColor: 'var(--color-surface-raised)',
+            }}
+          >
+            <WordmarkLogo size="md" />
           </div>
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>Welcome to HelioGram</h2>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>Welcome to Community</h2>
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Create or join a workspace to get started</p>
         </div>
       </div>

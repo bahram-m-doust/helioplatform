@@ -12,7 +12,7 @@ export function StatusBar() {
 
   const channelName = view === 'dm'
     ? (currentThread ? 'Direct Message' : 'DMs')
-    : currentChannel?.name || currentWorkspace?.name || 'HelioGram'
+    : currentChannel?.name || currentWorkspace?.name || 'Community'
 
   return (
     <div

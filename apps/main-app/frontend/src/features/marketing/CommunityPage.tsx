@@ -12,7 +12,7 @@ export default function CommunityPage() {
           <div className="rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
             <h1 className="text-2xl font-bold text-neutral-900 mb-4">Community Service Is Not Connected Yet</h1>
             <p className="text-neutral-600 mb-6 leading-relaxed">
-              برای اجرای Community باید HelioGram (frontend + backend) در حال اجرا باشد یا لینک Production آن را در
+              برای اجرای Community باید Community (frontend + backend) در حال اجرا باشد یا لینک Production آن را در
               `VITE_COMMUNITY_URL` تنظیم کنید.
             </p>
 
@@ -26,7 +26,7 @@ export default function CommunityPage() {
               <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-4">
                 <p className="font-semibold mb-2">Production</p>
                 <p>
-                  مقدار `VITE_COMMUNITY_URL` را روی آدرس دیپلوی HelioGram بگذار (مثلاً `https://community.yourdomain.com`).
+                  مقدار `VITE_COMMUNITY_URL` را روی آدرس دیپلوی Community بگذار (مثلاً `https://community.yourdomain.com`).
                 </p>
               </div>
             </div>

@@ -48,7 +48,7 @@ RUN npm run build
 FROM nginx:1.27-alpine AS runtime
 
 # Minimal SPA nginx config (fallback to index.html for client-side routing).
-# The edge nginx in front terminates /api, /heliogram, /static, /media; this
+# The edge nginx in front terminates /api, /community, /static, /media; this
 # inner container only needs to serve the SPA static files.
 RUN rm -f /etc/nginx/conf.d/default.conf
 COPY apps/main-app/frontend/nginx.prod.conf /etc/nginx/conf.d/default.conf

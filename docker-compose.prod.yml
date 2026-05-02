@@ -83,7 +83,7 @@ services:
       CSRF_COOKIE_SECURE: ${CSRF_COOKIE_SECURE:-False}
       # Canonical frontend URL used to build absolute links (password-reset
       # emails, etc.). Point it at whatever users type in the address bar.
-      FRONTEND_URL: ${FRONTEND_URL:-http://api.helio.ae/heliogram}
+      FRONTEND_URL: ${FRONTEND_URL:-http://api.helio.ae/community}
       APP_NAME: ${APP_NAME:-HelioGram}
       DEFAULT_LOCALE: ${DEFAULT_LOCALE:-en}
       # --- Database ---
@@ -124,7 +124,7 @@ services:
       context: ./apps/heliogram
       dockerfile: frontend/Dockerfile.prod
       args:
-        HELIOGRAM_BASE_PATH: /heliogram/
+        HELIOGRAM_BASE_PATH: /community/
     container_name: helio-prod-heliogram-frontend
     <<: *default-restart
     depends_on:
@@ -152,7 +152,7 @@ services:
         VITE_VIDEO_AGENT_API_BASE_URL: ${VITE_VIDEO_AGENT_API_BASE_URL:-/api/video}
         VITE_STORYTELLER_AGENT_API_BASE_URL: ${VITE_STORYTELLER_AGENT_API_BASE_URL:-/api/storyteller}
         VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL: ${VITE_CAMPAIGN_MAKER_AGENT_API_BASE_URL:-/api/campaign}
-        VITE_COMMUNITY_URL: ${VITE_COMMUNITY_URL:-/heliogram}
+        VITE_COMMUNITY_URL: ${VITE_COMMUNITY_URL:-/community}
         VITE_OPENROUTER_API_KEY: ${VITE_OPENROUTER_API_KEY:-}
         VITE_OPENROUTER_MODEL: ${VITE_OPENROUTER_MODEL:-openai/gpt-4o}
         VITE_OPENROUTER_FALLBACK_MODELS: ${VITE_OPENROUTER_FALLBACK_MODELS:-}

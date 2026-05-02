@@ -86,7 +86,7 @@ export default function App() {
                 <span className="text-yellow-400">Integrate</span> Your Brand Identity Across Every Touchpoint
               </h1>
               <p className="mb-10 text-lg text-neutral-600 sm:text-xl">
-                Helio uses artificial intelligence to ensure your brand identity stays consistent, flexible, and future-ready across all channels.
+                Bextudio uses artificial intelligence to ensure your brand identity stays consistent, flexible, and future-ready across all channels.
               </p>
               <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <button
@@ -179,7 +179,7 @@ export default function App() {
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center mb-16">
               <h2 className="text-3xl font-semibold tracking-tight text-neutral-900 sm:text-4xl lg:text-5xl mb-4">AI That Solves Your Brand Challenges</h2>
-              <p className="text-lg text-neutral-600">Helio uses artificial intelligence to maintain consistency, adapt to change, and guide smarter brand decisions.</p>
+              <p className="text-lg text-neutral-600">Bextudio uses artificial intelligence to maintain consistency, adapt to change, and guide smarter brand decisions.</p>
             </div>
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
               {[
@@ -210,7 +210,7 @@ export default function App() {
             </div>
             
             <div className="text-center mb-16 relative z-10">
-              <p className="text-yellow-400 text-sm font-semibold tracking-wider uppercase mb-4">How the Helio Platform Works</p>
+              <p className="text-yellow-400 text-sm font-semibold tracking-wider uppercase mb-4">How the Bextudio Platform Works</p>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-white max-w-3xl mx-auto leading-tight tracking-tight">
                 From brand input to intelligent execution — powered by AI and designed for continuous improvement.
               </h2>
@@ -244,7 +244,7 @@ export default function App() {
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-3xl text-center mb-20 sm:mb-28">
               <h2 className="text-3xl font-semibold tracking-tight text-neutral-900 sm:text-4xl lg:text-5xl mb-6">Everything You Need to Build and Run an Intelligent Brand</h2>
-              <p className="text-lg text-neutral-600">Helio delivers a suite of AI-powered products designed to define, systemize, and scale your brand. Use them independently or combine them to create a fully integrated brand ecosystem.</p>
+              <p className="text-lg text-neutral-600">Bextudio delivers a suite of AI-powered products designed to define, systemize, and scale your brand. Use them independently or combine them to create a fully integrated brand ecosystem.</p>
             </div>
 
             <div className="space-y-24 lg:space-y-32">
@@ -292,7 +292,7 @@ export default function App() {
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
               <div className="max-w-2xl">
                 <h2 className="text-3xl font-semibold tracking-tight text-neutral-900 sm:text-4xl mb-4">Proven Results Across Brands</h2>
-                <p className="text-lg text-neutral-600">Explore how leading brands use Helio to achieve consistency, scalability, and measurable growth.</p>
+                <p className="text-lg text-neutral-600">Explore how leading brands use Bextudio to achieve consistency, scalability, and measurable growth.</p>
               </div>
               <button className="bg-yellow-400 hover:bg-yellow-500 text-neutral-900 px-6 py-2.5 rounded-md text-sm font-semibold transition-colors shrink-0">
                 View All Works

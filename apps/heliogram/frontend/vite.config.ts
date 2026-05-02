@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // Public base path. In production the community app is served under
-// /heliogram/ by the root nginx, so HTML/asset URLs must be rewritten
+// /community/ by the root nginx, so HTML/asset URLs must be rewritten
 // accordingly. Dev keeps '/' so `vite dev` continues to work unchanged.
 const basePath = process.env.HELIOGRAM_BASE_PATH ?? '/'
 
