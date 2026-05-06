@@ -1,7 +1,5 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
 import { Send, Download, Bot, User, Shield, Paperclip, X, Trash2 } from 'lucide-react';
-import { SiteHeader } from '../../../shared/layout/SiteHeader';
-import { SiteFooter } from '../../../shared/layout/SiteFooter';
 import { useAuth } from '../../auth/AuthContext';
 import {
   OPENROUTER_API_KEY,
@@ -854,8 +852,6 @@ export default function SoulPrintApp() {
 
   return (
     <div className="min-h-screen bg-white font-sans selection:bg-yellow-400 selection:text-neutral-900 flex flex-col">
-      <SiteHeader isAuthenticated={isAuthenticated} onLoginClick={openAuthModal} />
-
       <main className="flex-1 bg-neutral-50 py-8 sm:py-12 flex flex-col">
         <div className="mx-auto w-full max-w-4xl px-6 lg:px-8 flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-8">
@@ -1024,8 +1020,6 @@ export default function SoulPrintApp() {
           </div>
         </div>
       </main>
-
-      <SiteFooter />
     </div>
   );
 }

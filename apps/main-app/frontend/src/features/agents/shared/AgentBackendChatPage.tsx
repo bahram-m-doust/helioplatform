@@ -1,7 +1,5 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
 import { Bot, Download, Send, Shield, User } from 'lucide-react';
-import { SiteHeader } from '../../../shared/layout/SiteHeader';
-import { SiteFooter } from '../../../shared/layout/SiteFooter';
 import { useAuth } from '../../auth/AuthContext';
 
 interface Message {
@@ -160,8 +158,6 @@ export function AgentBackendChatPage({
 
   return (
     <div className="min-h-screen bg-white font-sans selection:bg-yellow-400 selection:text-neutral-900 flex flex-col">
-      <SiteHeader isAuthenticated={isAuthenticated} onLoginClick={openAuthModal} />
-
       <main className="flex-1 bg-neutral-50 py-8 sm:py-12 flex flex-col">
         <div className="mx-auto w-full max-w-4xl px-6 lg:px-8 flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-8">
@@ -307,8 +303,6 @@ export function AgentBackendChatPage({
           </div>
         </div>
       </main>
-
-      <SiteFooter />
     </div>
   );
 }
