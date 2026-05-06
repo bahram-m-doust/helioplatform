@@ -1,5 +1,6 @@
 import React from 'react';
 import { Menu } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { BrandLogo } from './BrandLogo';
 import { useAuth } from '../../features/auth/AuthContext';
 
@@ -10,8 +11,20 @@ interface SiteHeaderProps {
 
 export function SiteHeader({ isAuthenticated, onLoginClick }: SiteHeaderProps) {
   const auth = useAuth();
+  const { pathname } = useLocation();
   const resolvedIsAuthenticated = isAuthenticated ?? auth.isAuthenticated;
   const handleLoginClick = onLoginClick ?? auth.openAuthModal;
+
+  const hideOnAgentPages =
+    pathname === '/image-generator' ||
+    pathname === '/video-generator' ||
+    pathname === '/soul-print' ||
+    pathname === '/campaign-maker' ||
+    pathname === '/storyteller';
+
+  if (hideOnAgentPages) {
+    return null;
+  }
 
   const handleNavClick = () => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });

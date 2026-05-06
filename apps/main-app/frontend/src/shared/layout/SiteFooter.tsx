@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { BrandLogo } from './BrandLogo';
 
 interface SiteFooterProps {
@@ -6,6 +7,19 @@ interface SiteFooterProps {
 }
 
 export function SiteFooter({ className = '' }: SiteFooterProps) {
+  const { pathname } = useLocation();
+
+  const hideOnAgentPages =
+    pathname === '/image-generator' ||
+    pathname === '/video-generator' ||
+    pathname === '/soul-print' ||
+    pathname === '/campaign-maker' ||
+    pathname === '/storyteller';
+
+  if (hideOnAgentPages) {
+    return null;
+  }
+
   const handleSubscribeSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
   };
