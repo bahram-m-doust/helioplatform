@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bot, Download, Image as ImageIcon, Send, Shield, User } from 'lucide-react';
+import { Bot, Download, Send, Shield, User } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { IMAGE_GENERATION_API_URL, IMAGE_PROMPT_API_URL } from '../../../shared/config/site';
 import mansoryLogo from '../../../assets/brand-references/mansory.png';
@@ -106,25 +106,6 @@ export default function ImageGeneratorPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading, loadingStage]);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      return;
-    }
-
-    setMessages((prev) => {
-      if (prev.length > 0) {
-        return prev;
-      }
-
-      return [
-        {
-          role: 'assistant',
-          content: 'Welcome to Image Generator Agent.',
-        },
-      ];
-    });
-  }, [isAuthenticated]);
 
   const resolveBrandReferenceDataUrls = async (brand: BrandKey): Promise<string[]> => {
     const cached = brandReferenceCacheRef.current[brand];
@@ -277,15 +258,6 @@ export default function ImageGeneratorPage() {
 
       <main className="flex-1 bg-neutral-50 py-8 sm:py-12 flex flex-col">
         <div className="mx-auto w-full max-w-4xl px-6 lg:px-8 flex-1 flex flex-col">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-2xl font-bold text-neutral-900">Image Generator Agent</h1>
-              <p className="text-sm text-neutral-500 mt-1">
-                Subject-first two-step pipeline with clean prompt drafting before rendering.
-              </p>
-            </div>
-          </div>
-
           <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 flex-1 flex flex-col overflow-hidden min-h-[500px]">
             {!isAuthenticated ? (
               <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
@@ -306,7 +278,6 @@ export default function ImageGeneratorPage() {
             ) : (
               <>
                 <div className="px-6 pt-5 pb-4 border-b border-neutral-100">
-                  <p className="text-xs font-semibold tracking-wide text-neutral-500 uppercase mb-3">Select Brand</p>
                   <div className="flex flex-wrap gap-2">
                     {BRAND_OPTIONS.map((brand) => {
                       const isActive = selectedBrand === brand;
@@ -330,10 +301,7 @@ export default function ImageGeneratorPage() {
 
                 <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6">
                   {messages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-neutral-400 space-y-4">
-                      <ImageIcon className="size-12 text-neutral-300" />
-                      <p>Describe your image idea to generate the first result.</p>
-                    </div>
+                    <div className="h-full" />
                   ) : (
                     messages.map((msg, idx) => (
                       <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>

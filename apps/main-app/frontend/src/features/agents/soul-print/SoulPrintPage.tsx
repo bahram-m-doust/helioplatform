@@ -448,8 +448,6 @@ Stay open to revision, sharpening, and critical re-evaluation.
 You are not here to decorate a brand.
 You are here to build a believable brand world from the inside out.`;
 
-const WELCOME_MESSAGE =
-  "Welcome to Soul Print. I'm here to map your personal brand's logic and define the personal identity that's already within you.\nTo begin â€” what is your name?";
 const MAX_UPLOAD_COUNT = 5;
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_UPLOAD_BYTES = 20 * 1024 * 1024;
@@ -578,7 +576,7 @@ export default function SoulPrintApp() {
     if (stored.length > 0) {
       setMessages(stored);
     } else {
-      setMessages([{ role: 'assistant', content: WELCOME_MESSAGE }]);
+      setMessages([]);
     }
     setHistoryLoaded(true);
   }, [isAuthenticated, username]);
@@ -592,7 +590,7 @@ export default function SoulPrintApp() {
 
   const handleClearHistory = () => {
     clearChatHistory(SOUL_PRINT_AGENT_ID, username);
-    setMessages([{ role: 'assistant', content: WELCOME_MESSAGE }]);
+    setMessages([]);
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -854,40 +852,6 @@ export default function SoulPrintApp() {
     <div className="min-h-screen bg-white font-sans selection:bg-yellow-400 selection:text-neutral-900 flex flex-col">
       <main className="flex-1 bg-neutral-50 py-8 sm:py-12 flex flex-col">
         <div className="mx-auto w-full max-w-4xl px-6 lg:px-8 flex-1 flex flex-col">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div>
-                <h1 className="text-2xl font-bold text-neutral-900">Soul Print Agent</h1>
-                <p className="text-sm text-neutral-500 mt-1">
-                  Founder interview and Soulprint analysis workflow for building your brand city logic.
-                </p>
-                <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-medium text-neutral-600">
-                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
-                  This agent only reads Word (.doc / .docx) files.
-                </p>
-              </div>
-            </div>
-            {isAuthenticated && messages.length > 0 && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleClearHistory}
-                  className="flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-red-600 bg-white border border-neutral-200 px-4 py-2 rounded-md shadow-sm transition-colors"
-                  title="Clear saved chat history"
-                >
-                  <Trash2 className="size-4" />
-                  Clear
-                </button>
-                <button
-                  onClick={handleDownload}
-                  className="flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 bg-white border border-neutral-200 px-4 py-2 rounded-md shadow-sm transition-colors"
-                >
-                  <Download className="size-4" />
-                  Download Chat
-                </button>
-              </div>
-            )}
-          </div>
-          
           <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 flex-1 flex flex-col overflow-hidden min-h-[500px]">
             {!isAuthenticated ? (
               <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
@@ -907,10 +871,7 @@ export default function SoulPrintApp() {
               <>
                 <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6">
                   {messages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-neutral-400 space-y-4">
-                      <Bot className="size-12 text-neutral-300" />
-                      <p>Start a conversation with the Soul Print Agent</p>
-                    </div>
+                    <div className="h-full" />
                   ) : (
                     messages.filter(msg => msg.role !== 'system').map((msg, idx) => (
                       <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
@@ -1010,10 +971,6 @@ export default function SoulPrintApp() {
                       <Send className="size-4 ml-0.5" />
                     </button>
                   </div>
-                  <p className="text-xs text-neutral-400 mt-2 text-center">
-                    Press Enter to send, Shift+Enter for new line. Attach up to {MAX_UPLOAD_COUNT} Word files (.doc / .docx) per message.
-                    {isUploadingFiles ? ' Processing files...' : ''}
-                  </p>
                 </div>
               </>
             )}

@@ -62,11 +62,6 @@ export function AgentBackendChatPage({
     scrollToBottom();
   }, [messages, isLoading]);
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    setMessages((prev) => (prev.length > 0 ? prev : [{ role: 'assistant', content: definition.introMessage }]));
-  }, [isAuthenticated, definition.introMessage]);
-
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -160,22 +155,6 @@ export function AgentBackendChatPage({
     <div className="min-h-screen bg-white font-sans selection:bg-yellow-400 selection:text-neutral-900 flex flex-col">
       <main className="flex-1 bg-neutral-50 py-8 sm:py-12 flex flex-col">
         <div className="mx-auto w-full max-w-4xl px-6 lg:px-8 flex-1 flex flex-col">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-2xl font-bold text-neutral-900">{definition.title}</h1>
-              <p className="text-sm text-neutral-500 mt-1">{definition.subtitle}</p>
-            </div>
-            {allowDownload && isAuthenticated && messages.length > 0 && (
-              <button
-                onClick={handleDownload}
-                className="flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 bg-white border border-neutral-200 px-4 py-2 rounded-md shadow-sm transition-colors"
-              >
-                <Download className="size-4" />
-                Download Chat
-              </button>
-            )}
-          </div>
-
           <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 flex-1 flex flex-col overflow-hidden min-h-[500px]">
             {!isAuthenticated ? (
               <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
@@ -196,9 +175,6 @@ export function AgentBackendChatPage({
             ) : (
               <>
                 <div className="px-6 pt-5 pb-4 border-b border-neutral-100">
-                  <p className="text-xs font-semibold tracking-wide text-neutral-500 uppercase mb-3">
-                    {definition.optionLabel}
-                  </p>
                   <div className="flex flex-wrap gap-2">
                     {definition.options.map((option) => {
                       const isActive = selectedOption === option;
@@ -222,10 +198,7 @@ export function AgentBackendChatPage({
 
                 <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6">
                   {messages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-neutral-400 space-y-4">
-                      <Bot className="size-12 text-neutral-300" />
-                      <p>Start a conversation with {definition.title}</p>
-                    </div>
+                    <div className="h-full" />
                   ) : (
                     messages.map((msg, idx) => (
                       <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
@@ -294,9 +267,6 @@ export function AgentBackendChatPage({
                       <Send className="size-4 ml-0.5" />
                     </button>
                   </div>
-                  <p className="text-xs text-neutral-400 mt-2 text-center">
-                    Press Enter to send, Shift+Enter for new line
-                  </p>
                 </div>
               </>
             )}
