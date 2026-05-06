@@ -1,7 +1,5 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Bot, Download, Image as ImageIcon, Send, Shield, User } from 'lucide-react';
-import { SiteHeader } from '../../../shared/layout/SiteHeader';
-import { SiteFooter } from '../../../shared/layout/SiteFooter';
 import { useAuth } from '../../auth/AuthContext';
 import { IMAGE_GENERATION_API_URL, IMAGE_PROMPT_API_URL } from '../../../shared/config/site';
 import mansoryLogo from '../../../assets/brand-references/mansory.png';
@@ -276,7 +274,6 @@ export default function ImageGeneratorPage() {
 
   return (
     <div className="min-h-screen bg-white font-sans selection:bg-yellow-400 selection:text-neutral-900 flex flex-col">
-      <SiteHeader isAuthenticated={isAuthenticated} onLoginClick={openAuthModal} />
 
       <main className="flex-1 bg-neutral-50 py-8 sm:py-12 flex flex-col">
         <div className="mx-auto w-full max-w-4xl px-6 lg:px-8 flex-1 flex flex-col">
@@ -426,8 +423,7 @@ export default function ImageGeneratorPage() {
           </div>
         </div>
       </main>
-
-      <SiteFooter />
     </div>
   );
 }
+
