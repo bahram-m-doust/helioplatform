@@ -18,6 +18,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@framer-embeds/*": [
+        "../../../integrations/framer/*"
       ]
     },
     "allowImportingTsExtensions": true,

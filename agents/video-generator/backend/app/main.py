@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import health, video
 from app.config import SERVICE_NAME
+from app.framer_token import FramerEmbedMiddleware
 
 
 @asynccontextmanager
@@ -15,6 +16,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     application = FastAPI(title=f"Helio {SERVICE_NAME}", lifespan=lifespan)
+    application.add_middleware(FramerEmbedMiddleware)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],

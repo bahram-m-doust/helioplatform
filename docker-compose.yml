@@ -73,6 +73,8 @@ services:
       SERVICE_NAME: image-generator
       PORT: "8020"
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4000}
+      FRAMER_JWT_SECRET: ${FRAMER_JWT_SECRET:-}
+      FRAMER_EMBED_TOOL: image
     ports:
       - "${IMAGE_AGENT_PORT:-8020}:8020"
 
@@ -88,6 +90,8 @@ services:
       SERVICE_NAME: video-generator
       PORT: "8030"
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4000}
+      FRAMER_JWT_SECRET: ${FRAMER_JWT_SECRET:-}
+      FRAMER_EMBED_TOOL: video
     ports:
       - "${VIDEO_AGENT_PORT:-8030}:8030"
 
@@ -103,6 +107,8 @@ services:
       SERVICE_NAME: storyteller
       PORT: "8040"
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4000}
+      FRAMER_JWT_SECRET: ${FRAMER_JWT_SECRET:-}
+      FRAMER_EMBED_TOOL: storyteller
     ports:
       - "${STORYTELLER_AGENT_PORT:-8040}:8040"
 
@@ -118,8 +124,29 @@ services:
       SERVICE_NAME: campaign-maker
       PORT: "8050"
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4000}
+      FRAMER_JWT_SECRET: ${FRAMER_JWT_SECRET:-}
+      FRAMER_EMBED_TOOL: campaign
     ports:
       - "${CAMPAIGN_MAKER_AGENT_PORT:-8050}:8050"
+
+  framer-gate-api:
+    build:
+      context: ./agents/framer-gate/backend
+      dockerfile: Dockerfile
+    container_name: helio-framer-gate-api
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      PORT: "8060"
+      FRAMER_JWT_SECRET: ${FRAMER_JWT_SECRET:-}
+      FRAMER_GATE_SECRET_IMAGE: ${FRAMER_GATE_SECRET_IMAGE:-}
+      FRAMER_GATE_SECRET_VIDEO: ${FRAMER_GATE_SECRET_VIDEO:-}
+      FRAMER_GATE_SECRET_STORYTELLER: ${FRAMER_GATE_SECRET_STORYTELLER:-}
+      FRAMER_GATE_SECRET_CAMPAIGN: ${FRAMER_GATE_SECRET_CAMPAIGN:-}
+      FRAMER_GATE_SECRET_SOULPRINT: ${FRAMER_GATE_SECRET_SOULPRINT:-}
+    ports:
+      - "${FRAMER_GATE_PORT:-8060}:8060"
 
 volumes:
   postgres_data:

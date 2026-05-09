@@ -91,6 +91,32 @@ location /api/storyteller/ {
   proxy_set_header X-Forwarded-Proto $scheme;
 }
 
+# Embeds on platform.helio.ae call this host cross-origin; browsers require CORS.
+location /api/framer-gate/ {
+  rewrite ^/api/framer-gate(/.*)$ $1 break;
+
+  if ($request_method = OPTIONS) {
+    add_header Access-Control-Allow-Origin '*' always;
+    add_header Access-Control-Allow-Methods 'GET, POST, OPTIONS' always;
+    add_header Access-Control-Allow-Headers 'Content-Type, Authorization' always;
+    add_header Access-Control-Max-Age 86400 always;
+    add_header Content-Length 0;
+    return 204;
+  }
+
+  proxy_pass http://framer_gate;
+  proxy_http_version 1.1;
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
+
+  proxy_hide_header Access-Control-Allow-Origin;
+  proxy_hide_header Access-Control-Allow-Headers;
+  add_header Access-Control-Allow-Origin '*' always;
+  add_header Access-Control-Allow-Headers 'Content-Type, Authorization' always;
+}
+
 # ---- HelioGram backend (catch-all API + admin + static/media) ----
 location /api/ {
   proxy_pass http://heliogram_backend;

@@ -31,6 +31,7 @@ x-agent-env: &agent-env
   CAMPAIGN_MAKER_LLM_MODEL: ${CAMPAIGN_MAKER_LLM_MODEL:-openai/gpt-4o}
   CAMPAIGN_MAKER_FALLBACK_MODELS: ${CAMPAIGN_MAKER_FALLBACK_MODELS:-}
   FRONTEND_URL: ${PUBLIC_URL:-http://103.174.102.124}
+  CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-}
 
 services:
   # ---------------------------------------------------------------- database

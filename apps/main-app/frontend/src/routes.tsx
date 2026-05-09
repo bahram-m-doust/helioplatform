@@ -17,6 +17,7 @@ const ImageGeneratorPage = lazy(
 const VideoGeneratorPage = lazy(
   () => import('./features/agents/video-generator/VideoGeneratorPage'),
 );
+const EmbedVideoGeneratorPage = lazy(() => import('./features/embed/EmbedVideoGeneratorPage'));
 const CampaignMakerPage = lazy(
   () => import('./features/agents/campaign-maker/CampaignMakerPage'),
 );
@@ -37,6 +38,7 @@ export function AppRoutes() {
         <Route path="/soul-print" element={<SoulPrintPage />} />
         <Route path="/image-generator" element={<ImageGeneratorPage />} />
         <Route path="/video-generator" element={<VideoGeneratorPage />} />
+        <Route path="/embed/video-generator" element={<EmbedVideoGeneratorPage />} />
         <Route path="/campaign-maker" element={<CampaignMakerPage />} />
         <Route path="/storyteller" element={<StorytellerPage />} />
       </Routes>
