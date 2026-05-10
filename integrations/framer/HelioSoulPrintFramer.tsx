@@ -79,6 +79,7 @@ const fileToDataUrl = (file: File): Promise<string> =>
 
 export default function HelioSoulPrintFramer() {
   const [unlocked, setUnlocked] = React.useState(false)
+  const [showPass, setShowPass] = React.useState(false)
   const [accessPass, setAccessPass] = React.useState('')
   const [input, setInput] = React.useState('')
   const [messages, setMessages] = React.useState<Message[]>([])
@@ -86,6 +87,7 @@ export default function HelioSoulPrintFramer() {
   const [loading, setLoading] = React.useState(false)
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const fileRef = React.useRef<HTMLInputElement>(null)
+  const soulGateRef = React.useRef<{ userLine: string; uploads: PendingFile[]; summary: string } | null>(null)
 
   React.useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -112,17 +114,10 @@ export default function HelioSoulPrintFramer() {
     setPending((p) => p.filter((x) => x.id !== id))
   }
 
-  async function onSend() {
-    const text = input.trim()
-    const hasFiles = pending.length > 0
-    if (!text && !hasFiles) return
-
-    const userLine = text || 'I have uploaded founder files for analysis.'
-    const summary = hasFiles ? `${userLine}\n\nUploaded:\n${pending.map((p) => `- ${p.name}`).join('\n')}` : userLine
+  async function deliverSoul(payload: { userLine: string; uploads: PendingFile[]; summary: string }) {
+    const { userLine, uploads, summary } = payload
     setInput('')
-    const uploads = pending
     setPending([])
-
     const next: Message[] = [...messages, { role: 'user', content: summary }]
     setMessages(next)
 
@@ -137,13 +132,12 @@ export default function HelioSoulPrintFramer() {
       return
     }
 
+    const hasFiles = uploads.length > 0
     setLoading(true)
     const ac = new AbortController()
     const to = window.setTimeout(() => ac.abort(), 120_000)
     try {
-      const prevForApi = next
-        .slice(0, -1)
-        .map((m) => ({ role: m.role, content: m.content }))
+      const prevForApi = next.slice(0, -1).map((m) => ({ role: m.role, content: m.content }))
 
       const lastUser =
         hasFiles && uploads.length > 0
@@ -189,8 +183,46 @@ export default function HelioSoulPrintFramer() {
     }
   }
 
+  async function onSend() {
+    const text = input.trim()
+    const hasFiles = pending.length > 0
+    if (!text && !hasFiles) return
+
+    const userLine = text || 'I have uploaded founder files for analysis.'
+    const summary = hasFiles ? `${userLine}\n\nUploaded:\n${pending.map((p) => `- ${p.name}`).join('\n')}` : userLine
+
+    if (!unlocked) {
+      soulGateRef.current = {
+        userLine,
+        uploads: pending.map((p) => ({ ...p })),
+        summary,
+      }
+      setShowPass(true)
+      return
+    }
+
+    await deliverSoul({ userLine, uploads: [...pending], summary })
+  }
+
+  function confirmPass() {
+    if (accessPass !== ACCESS_PASSWORD) return
+    setUnlocked(true)
+    setShowPass(false)
+    setAccessPass('')
+    const g = soulGateRef.current
+    soulGateRef.current = null
+    if (g) void deliverSoul(g)
+  }
+
+  function cancelPass() {
+    setShowPass(false)
+    setAccessPass('')
+    soulGateRef.current = null
+  }
+
   const box: React.CSSProperties = {
     fontFamily: 'system-ui, sans-serif',
+    position: 'relative',
     height: '100%',
     minHeight: 520,
     display: 'flex',
@@ -199,65 +231,6 @@ export default function HelioSoulPrintFramer() {
     borderRadius: 16,
     background: '#fff',
     overflow: 'hidden',
-  }
-
-  if (!unlocked) {
-    return (
-      <div
-        style={{
-          fontFamily: 'system-ui, sans-serif',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: 320,
-          padding: 24,
-          border: '1px solid #e5e5e5',
-          borderRadius: 16,
-          background: '#fff',
-          gap: 12,
-        }}
-      >
-        <input
-          type="password"
-          value={accessPass}
-          onChange={(e) => setAccessPass(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              const v = (e.currentTarget as HTMLInputElement).value
-              if (v === ACCESS_PASSWORD) setUnlocked(true)
-            }
-          }}
-          placeholder="Password"
-          style={{
-            width: '100%',
-            maxWidth: 280,
-            padding: '12px 14px',
-            borderRadius: 10,
-            border: '1px solid #e5e5e5',
-            fontSize: 15,
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => {
-            if (accessPass === ACCESS_PASSWORD) setUnlocked(true)
-          }}
-          style={{
-            padding: '10px 20px',
-            borderRadius: 10,
-            border: 'none',
-            background: ACCENT,
-            color: '#0a0a0a',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          Continue
-        </button>
-      </div>
-    )
   }
 
   return (
@@ -303,6 +276,11 @@ export default function HelioSoulPrintFramer() {
       ) : null}
 
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+        {messages.length === 0 ? (
+          <p style={{ color: '#737373', fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+            Welcome to Soul Print. Optionally attach founder documents above, write your message, then send.
+          </p>
+        ) : null}
         {messages.map((m, i) => (
           <div
             key={i}
@@ -398,6 +376,85 @@ export default function HelioSoulPrintFramer() {
           </button>
         </div>
       </div>
+      {showPass ? (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            borderRadius: 16,
+          }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              padding: 24,
+              borderRadius: 14,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+              minWidth: 280,
+              boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+            }}
+          >
+            <input
+              type="password"
+              value={accessPass}
+              onChange={(e) => setAccessPass(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  confirmPass()
+                }
+              }}
+              placeholder="Password"
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: 10,
+                border: '1px solid #e5e5e5',
+                fontSize: 15,
+                boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={cancelPass}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: 10,
+                  border: '1px solid #e5e5e5',
+                  background: '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmPass}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: ACCENT,
+                  color: '#0a0a0a',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

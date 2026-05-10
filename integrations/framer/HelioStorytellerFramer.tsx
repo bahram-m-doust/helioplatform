@@ -34,20 +34,20 @@ function parseBackendError(status: number, bodyText: string): string {
 
 export default function HelioStorytellerFramer() {
   const [unlocked, setUnlocked] = React.useState(false)
+  const [showPass, setShowPass] = React.useState(false)
   const [accessPass, setAccessPass] = React.useState('')
   const [profile, setProfile] = React.useState<string>(OPTIONS[0])
   const [input, setInput] = React.useState('')
   const [messages, setMessages] = React.useState<Message[]>([])
   const [loading, setLoading] = React.useState(false)
   const scrollRef = React.useRef<HTMLDivElement>(null)
+  const pendingTextRef = React.useRef<string | null>(null)
 
   React.useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, loading])
 
-  async function onSend() {
-    const text = input.trim()
-    if (!text) return
+  async function deliverMessage(text: string) {
     setInput('')
     const next: Message[] = [...messages, { role: 'user', content: text }]
     setMessages(next)
@@ -80,8 +80,36 @@ export default function HelioStorytellerFramer() {
     }
   }
 
+  async function onSend() {
+    const text = input.trim()
+    if (!text) return
+    if (!unlocked) {
+      pendingTextRef.current = text
+      setShowPass(true)
+      return
+    }
+    await deliverMessage(text)
+  }
+
+  function confirmPass() {
+    if (accessPass !== ACCESS_PASSWORD) return
+    setUnlocked(true)
+    setShowPass(false)
+    setAccessPass('')
+    const t = pendingTextRef.current
+    pendingTextRef.current = null
+    if (t) void deliverMessage(t)
+  }
+
+  function cancelPass() {
+    setShowPass(false)
+    setAccessPass('')
+    pendingTextRef.current = null
+  }
+
   const box: React.CSSProperties = {
     fontFamily: 'system-ui, sans-serif',
+    position: 'relative',
     height: '100%',
     minHeight: 480,
     display: 'flex',
@@ -90,65 +118,6 @@ export default function HelioStorytellerFramer() {
     borderRadius: 16,
     background: '#fff',
     overflow: 'hidden',
-  }
-
-  if (!unlocked) {
-    return (
-      <div
-        style={{
-          fontFamily: 'system-ui, sans-serif',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: 320,
-          padding: 24,
-          border: '1px solid #e5e5e5',
-          borderRadius: 16,
-          background: '#fff',
-          gap: 12,
-        }}
-      >
-        <input
-          type="password"
-          value={accessPass}
-          onChange={(e) => setAccessPass(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              const v = (e.currentTarget as HTMLInputElement).value
-              if (v === ACCESS_PASSWORD) setUnlocked(true)
-            }
-          }}
-          placeholder="Password"
-          style={{
-            width: '100%',
-            maxWidth: 280,
-            padding: '12px 14px',
-            borderRadius: 10,
-            border: '1px solid #e5e5e5',
-            fontSize: 15,
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => {
-            if (accessPass === ACCESS_PASSWORD) setUnlocked(true)
-          }}
-          style={{
-            padding: '10px 20px',
-            borderRadius: 10,
-            border: 'none',
-            background: ACCENT,
-            color: '#0a0a0a',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          Continue
-        </button>
-      </div>
-    )
   }
 
   return (
@@ -281,6 +250,85 @@ export default function HelioStorytellerFramer() {
           </button>
         </div>
       </div>
+      {showPass ? (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            borderRadius: 16,
+          }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              padding: 24,
+              borderRadius: 14,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+              minWidth: 280,
+              boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+            }}
+          >
+            <input
+              type="password"
+              value={accessPass}
+              onChange={(e) => setAccessPass(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  confirmPass()
+                }
+              }}
+              placeholder="Password"
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: 10,
+                border: '1px solid #e5e5e5',
+                fontSize: 15,
+                boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={cancelPass}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: 10,
+                  border: '1px solid #e5e5e5',
+                  background: '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmPass}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: ACCENT,
+                  color: '#0a0a0a',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

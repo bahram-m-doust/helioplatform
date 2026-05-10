@@ -73,6 +73,7 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 
 export default function HelioVideoGenFramer() {
   const [unlocked, setUnlocked] = React.useState(false)
+  const [showPass, setShowPass] = React.useState(false)
   const [accessPass, setAccessPass] = React.useState('')
   const [brand, setBrand] = React.useState<BrandKey>('Mansory')
   const [input, setInput] = React.useState('')
@@ -81,6 +82,7 @@ export default function HelioVideoGenFramer() {
   const [stage, setStage] = React.useState('Generating...')
   const refCache = React.useRef<Partial<Record<BrandKey, string[]>>>({})
   const scrollRef = React.useRef<HTMLDivElement>(null)
+  const pendingTextRef = React.useRef<string | null>(null)
 
   React.useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -101,11 +103,9 @@ export default function HelioVideoGenFramer() {
     return out
   }
 
-  async function onSend() {
-    const text = input.trim()
-    if (!text) return
+  async function deliverVideo(userRequest: string) {
     setInput('')
-    const next: Message[] = [...messages, { role: 'user', content: text }]
+    const next: Message[] = [...messages, { role: 'user', content: userRequest }]
     setMessages(next)
     setLoading(true)
     const ac = new AbortController()
@@ -115,7 +115,7 @@ export default function HelioVideoGenFramer() {
       const r1 = await fetch(VIDEO_IMAGE_PROMPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brand, user_request: text }),
+        body: JSON.stringify({ brand, user_request: userRequest }),
         signal: ac.signal,
       })
       if (!r1.ok) throw new Error(parseApiError(r1.status, await r1.text(), 'Video image prompt'))
@@ -144,7 +144,7 @@ export default function HelioVideoGenFramer() {
       const r3 = await fetch(VIDEO_PROMPT_FROM_IMAGE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brand, user_request: text, image_url: imageUrl }),
+        body: JSON.stringify({ brand, user_request: userRequest, image_url: imageUrl }),
         signal: ac.signal,
       })
       if (!r3.ok) throw new Error(parseApiError(r3.status, await r3.text(), 'Video prompt'))
@@ -182,8 +182,36 @@ export default function HelioVideoGenFramer() {
     }
   }
 
+  async function onSend() {
+    const text = input.trim()
+    if (!text) return
+    if (!unlocked) {
+      pendingTextRef.current = text
+      setShowPass(true)
+      return
+    }
+    await deliverVideo(text)
+  }
+
+  function confirmPass() {
+    if (accessPass !== ACCESS_PASSWORD) return
+    setUnlocked(true)
+    setShowPass(false)
+    setAccessPass('')
+    const t = pendingTextRef.current
+    pendingTextRef.current = null
+    if (t) void deliverVideo(t)
+  }
+
+  function cancelPass() {
+    setShowPass(false)
+    setAccessPass('')
+    pendingTextRef.current = null
+  }
+
   const box: React.CSSProperties = {
     fontFamily: 'system-ui, sans-serif',
+    position: 'relative',
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
@@ -192,65 +220,6 @@ export default function HelioVideoGenFramer() {
     borderRadius: 16,
     background: '#fff',
     overflow: 'hidden',
-  }
-
-  if (!unlocked) {
-    return (
-      <div
-        style={{
-          fontFamily: 'system-ui, sans-serif',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: 320,
-          padding: 24,
-          border: '1px solid #e5e5e5',
-          borderRadius: 16,
-          background: '#fff',
-          gap: 12,
-        }}
-      >
-        <input
-          type="password"
-          value={accessPass}
-          onChange={(e) => setAccessPass(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              const v = (e.currentTarget as HTMLInputElement).value
-              if (v === ACCESS_PASSWORD) setUnlocked(true)
-            }
-          }}
-          placeholder="Password"
-          style={{
-            width: '100%',
-            maxWidth: 280,
-            padding: '12px 14px',
-            borderRadius: 10,
-            border: '1px solid #e5e5e5',
-            fontSize: 15,
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => {
-            if (accessPass === ACCESS_PASSWORD) setUnlocked(true)
-          }}
-          style={{
-            padding: '10px 20px',
-            borderRadius: 10,
-            border: 'none',
-            background: ACCENT,
-            color: '#0a0a0a',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          Continue
-        </button>
-      </div>
-    )
   }
 
   return (
@@ -280,6 +249,11 @@ export default function HelioVideoGenFramer() {
       </div>
 
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+        {messages.length === 0 ? (
+          <p style={{ color: '#737373', fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+            Welcome to Video Generator. Choose a brand, describe the video you want below, then send.
+          </p>
+        ) : null}
         {messages.map((m, i) => (
           <div
             key={i}
@@ -426,6 +400,85 @@ export default function HelioVideoGenFramer() {
           </button>
         </div>
       </div>
+      {showPass ? (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            borderRadius: 16,
+          }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              padding: 24,
+              borderRadius: 14,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+              minWidth: 280,
+              boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+            }}
+          >
+            <input
+              type="password"
+              value={accessPass}
+              onChange={(e) => setAccessPass(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  confirmPass()
+                }
+              }}
+              placeholder="Password"
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: 10,
+                border: '1px solid #e5e5e5',
+                fontSize: 15,
+                boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={cancelPass}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: 10,
+                  border: '1px solid #e5e5e5',
+                  background: '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmPass}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: ACCENT,
+                  color: '#0a0a0a',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
